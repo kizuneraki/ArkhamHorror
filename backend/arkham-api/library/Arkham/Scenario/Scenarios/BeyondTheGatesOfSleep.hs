@@ -92,20 +92,20 @@ data Dream
 
 dreamLabel :: Dream -> Text
 dreamLabel = \case
-  GuardianDream -> "Guardian Dream"
-  SeekerDream -> "Seeker Dream"
-  RogueDream -> "Rogue Dream"
-  MysticDream -> "Mystic Dream"
-  SurvivorDream -> "Survivor Dream"
-  CriminalDream -> "Criminal Dream"
-  DrifterDream -> "Drifter Dream"
-  HunterDream -> "Hunter Dream"
-  MedicOrAssistantDream -> "Medic or Assistant Dream"
-  MiskatonicOrScholarDream -> "Miskatonic or Scholar Dream"
-  VeteranDream -> "Veteran Dream"
-  WayfarerDream -> "Wayfarer Dream"
-  NeutralDream1 -> "Neutral Dream 1"
-  NeutralDream2 -> "Neutral Dream 2"
+  GuardianDream -> "守卫者 梦境"
+  SeekerDream -> "探求者 梦境"
+  RogueDream -> "流浪者 梦境"
+  MysticDream -> "潜修者 梦境"
+  SurvivorDream -> "求生者 梦境"
+  CriminalDream -> "罪犯 梦境"
+  DrifterDream -> "漂泊着 梦境"
+  HunterDream -> "猎手 梦境"
+  MedicOrAssistantDream -> "医师 或 助理 梦境"
+  MiskatonicOrScholarDream -> "米斯塔卡尼克 或 学者 梦境"
+  VeteranDream -> "老兵 梦境"
+  WayfarerDream -> "旅人 梦境"
+  NeutralDream1 -> "中立 梦境 1"
+  NeutralDream2 -> "中立 梦境 2"
 
 dreamEffect :: ReverseQueue m => InvestigatorId -> Dream -> m ()
 dreamEffect iid = \case
