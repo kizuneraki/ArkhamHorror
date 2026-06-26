@@ -14,6 +14,7 @@ guardianDream =
       \在周围的灌木丛中，你瞥见一些扭曲的影子来回穿梭，但当你举着火把去看，它们却又消失了。\
       \你开始逃跑，但身后一声巨大的敲击吓得你停在原地。\
       \你转身时，雾气散去，你终于见到了这座山的底部，一道风化的厚重石门在那儿呼唤着你。"
+      , ListEntry [ ListItemEntry (BasicEntry "查找你的牌库，找出一张{guardian}卡牌并将其打出（支付其费用）。") []]
     ]
 
 seekerDream :: FlavorText
@@ -31,288 +32,238 @@ rogueDream :: FlavorText
 rogueDream =
   FlavorText
     (Just "流浪者({rogue})梦境")
-    [ BasicEntry "You conceal a grin as you examine your cards. Jack of diamonds, queen of\
-      \ spades for the nut straight. Your stack of chips is growing larger with\
-      \ each hand, and this will be no different. Bets fly back and forth until it\
-      \ is just you and the man in the white suit across from you. “Are you sure\
-      \ about this?” he taunts, cradling his fingers. You push all of your chips\
-      \ into the center and reveal your king-high straight. “What a shame.” He\
-      \ tsks, revealing a pair of twos. “It appears you have lost everything.” You\
-      \ protest, pointing to your superior hand, but when you examine it again, it\
-      \ has changed. The figures on the face cards are now monstrous shapes with no\
-      \ eyes, many mouths, and tentacled arms. “9♥-10♣-D♦-C♠-N{autoFail},” the cards read.\
-      \ You gape in shock as you are carried away from the table and ushered out\
-      \ the door."
+    [ BasicEntry "你检查了一下自己的牌，掩饰着脸上的笑意。\
+      \方块J、黑桃Q，能凑出这把最大的顺子。\
+      \每一张手牌都让你的筹码越堆越高，这次也不会例外。\
+      \注码来来回回地下，最后这张赌桌上只剩你和对面那名身着白西装的男子。\
+      \“你确定要押？”他十指交叉，讥讽道。\
+      \你将自己所有的筹码推到桌子中央，亮出自己的牌，组成了K-Q-J-10-9。“真遗憾。”\
+      \他咂了咂嘴，翻开手上的一对2，“看来你输个精光。”你的牌明显更大，你指着自己的牌呵斥他，但当你再次看向牌，它们竟然变了样。\
+      \牌上的图案变成了没有眼睛、长着许多嘴巴和触手的怪物形状。\
+      \ “9♥-10♣-D♦-C♠-N{autoFail},”\
+      \牌最终变成了这些模样。你震惊地被人带离赌桌，领出门外。"
     ]
 
 mysticDream :: FlavorText
 mysticDream =
   FlavorText
     (Just "潜修者({mystic})梦境")
-    [ BasicEntry "You traverse an enchanted path full of color and vibrancy. Wisps of\
-      \ light hang in the air, bobbing up and down as you approach. With each step\
-      \ you take, the flora along the path atrophy, following no laws of nature.\
-      \ Flowers once bloomed in your wake; now they shrivel as you pass. Vines\
-      \ wither and die. The wisps mock you for your ignorance, yet you do not slow\
-      \ your pace. As you look upon the fair trees, their leaves begin to fall. The\
-      \ once-green grass is dry, brown, and cracked. But even should the whole\
-      \ forest die, it will be worth reaching the other side. When you do, the\
-      \ trail ends abruptly at an ornate wooden door carved into the trunk of a\
-      \ great redwood."
+    [ BasicEntry "你走过一条像是被施了魔法的道路，沿路色彩缤纷、生机盎然。\
+      \一缕缕光线悬在空中，随着你的接近而上下浮动。\
+      \你每走一步，沿途的植物便违背了自然的规律，萎缩衰败。\
+      \花儿曾在你身前盛开；现在，它们却在你走过之后枯萎。藤蔓也皱缩枯死。\
+      \光线嘲笑着你的无知，而你却没有放慢自己的脚步。\
+      \你一看向美丽的树木，它们的叶子就开始凋零。\
+      \原先的绿草已经发黄，干枯裂开。但你必须到森林另一头去，就算让整座森林都枯死也值得。\
+      \你走出森林时，脚下的小径突然到了尽头，前面是一扇大红杉的树干雕成的精致木门。"
     ]
 
 survivorDream :: FlavorText
 survivorDream =
   FlavorText
     (Just "求生者({survivor})梦境")
-    [ BasicEntry "You are fleeing through a dark, cramped hall of vine-covered wood.\
-      \ Something inexplicable chases you through the murk. You are too terrified\
-      \ to turn and look upon your pursuer, but nonetheless you know that if it\
-      \ catches you, it will mean the end of your life. It will pierce your heart,\
-      \ drain your blood, and devour your insides. It is this thought that drives\
-      \ you onward, faster than you have ever run before. You cannot let it reach\
-      \ you. You cannot let it feed. Suddenly, you spot your way out: a sturdy\
-      \ wooden door surrounded by a wall of vines."
+    [ BasicEntry "你正在一条被藤蔓所覆盖的暗窄木质走廊里奔逃。\
+      \难以名状的某物正在黑暗中追赶着你。\
+      \你怕到不敢回头去看是什么在追着自己，你只知道要是被它抓住，你就没命了。\
+      \它会刺穿你的心脏、放干你的鲜血、吞噬你的脏腑。\
+      \这种想法驱使你往前狂奔，跑得比以往都快。\
+      \不能被它追上。不能被它吃了。\
+      \突然，你发现了出路：一扇环绕着藤的坚固木门。"
     ]
 
 criminalDream :: FlavorText
 criminalDream =
   FlavorText
     (Just "_罪犯_梦境")
-    [ BasicEntry "The blare of sirens echoes through the streets behind you. They’re\
-      \ gaining on you. They have always been hot on your heels, and you were\
-      \ always one step ahead...until now. You run down an alleyway, and a\
-      \ bright-red glare follows you. They’re going to catch you. They’ll lock you\
-      \ in a cage and throw away the key. Your freedom, your lifestyle, everything\
-      \ you are, everything you love: they’ll take it all away. And why? Just\
-      \ because you wouldn’t play by their rules? When have they ever gotten\
-      \ everything right? You round a corner just as the bulls are about to catch\
-      \ up to you and spot the entrance into a brick building."
+    [ BasicEntry "你身后的街道里回荡着刺耳的警笛声。\
+      \他们要追上你了。他们总是对你紧追不舍，而你总能以一步之差逃脱……\
+      \至少之前都是如此。你跑进一条小巷，一道明亮的红光跟着你。他们要抓住你了。\
+      \他们会把你关进牢笼然后扔掉牢笼的钥匙。\
+      \你的自由、你的人生，你拥有的和你所爱的一切，都会被他们夺走。\
+      \为什么呢？就因为你不愿遵守他们的规矩吗？他们怎能为所欲为？\
+      \当你拐过一个街角，条子正要追上你时，你发现了一幢砖砌建筑的入口。"
     ]
 
 drifterDream :: FlavorText
 drifterDream =
   FlavorText
     (Just "_漂泊者_梦境")
-    [ BasicEntry "You meander through a field of flowers, a warm spring breeze nudging\
-      \ your steps forward. A train track divides the field, and as you meet its\
-      \ parallel lines, the roaring clatter of steam and iron lumbers toward you.\
-      \ As the train passes by, you grab onto a ladder hanging from one of its many\
-      \ rusted and weather-beaten cars. Given the appearance of the exterior, the\
-      \ train’s interior is full of unexpected luxury and affluence: Persian rugs\
-      \ hang as decoration, marble staircases wind to dizzying heights, and a\
-      \ crystal chandelier speckles the room with prismatic brilliance. Under the\
-      \ chandelier sits an ornate doorway, its gilded lattices forming the\
-      \ depiction of a fox in a forest."
+    [ BasicEntry "你在一片花田里信步漫游，和煦的春风轻轻推动着你向前走。\
+      \一条火车铁轨横亘在田野中央，当你走到轨道上，蒸汽与钢铁的咔哒声向你袭来。\
+      \当火车经过，你抓住饱经风霜、锈迹斑斑的车厢上的梯子。\
+      \和看起来的不同，这列火车里满是一派意想不到的奢华景象：\
+      \墙上有波斯挂毯作为装饰，大理石台阶盘绕到令人目眩的高度，一盏水晶吊灯使整个车厢光彩夺目，金碧辉煌。\
+      \吊灯下是一道华丽的门，门上一个个镀金的格子构成了林中之狐的图画。"
     ]
 
 hunterDream :: FlavorText
 hunterDream =
   FlavorText
     (Just "_猎手_梦境")
-    [ BasicEntry "You stalk your prey through a decrepit house, its halls smelling of mold\
-      \ and dust. The creature you hunt is an abomination from an unnatural world.\
-      \ It threatens humanity’s very existence with its presence. You catch its\
-      \ uncanny shape entering one of the doorways upstairs. It cannot escape\
-      \ now—it is yours. But when you enter its den, you find only a dirty, cracked\
-      \ mirror and your own tired and troubled face reflected in the glass. Where\
-      \ could the aberration have gone? You are sure this is where it retreated to,\
-      \ and yet...you turn back to the entrance and are surprised to see a door\
-      \ where there was none before."
+    [ BasicEntry "你跟着猎物来到一幢破败的房子，里面散发着霉菌和灰尘的气味。你要猎捕的不是自然界的生物，而是怪物。\
+      \它的存在威胁着全体人类的安全。你看到了它那怪异的身影进了楼上的一道门。\
+      \它现在逃不了了——它是你的了。\
+      \但当你进入这个房间——它的巢穴，你只看到一面肮脏的破镜子，镜子里映照出你疲惫而苦恼的面容。\
+      \那头怪物怎么不见了？\
+      \你确定它逃到这里来了，但是……你转身回到入口，惊讶地发现了一扇没见过的门。"
     ]
 
 medicOrAssistantDream :: FlavorText
 medicOrAssistantDream =
   FlavorText
-    (Just "_医师_ or _助理_梦境")
-    [ BasicEntry "You stand in front of a closed casket. Mourners in black clothing stand\
-      \ in a line at your side, waiting for you to say your last words. Tearfully,\
-      \ you place a hand on the casket. The hard, cold wood feels dead under your\
-      \ palm. They confided in you. They relied on you. And in their time of utmost\
-      \ need, you failed them. All of this—the cold casket, the mourning friends\
-      \ and family—it is all because of you. But when you open the casket, there is\
-      \ no body inside: only a long stone passageway leading deep underground.\
-      \ Suddenly, one of the mourners pushes you forward, and you fall over the\
-      \ edge of the casket and down into the pit below, landing painfully on your\
-      \ side. As you rise to your feet, you find your only exit: a stone archway\
-      \ leading somewhere else entirely..."
+    (Just "_医师_ 或 _助理_梦境")
+    [ BasicEntry "你站在一具紧闭的棺材面前。\
+      \前来吊唁的人们身着黑衣，在你旁边站成一排，等你最后致辞。\
+      \你眼含热泪，一手放在棺材上。\
+      \你感觉手掌碰到的木板也像失去了生命一样，坚硬而冰冷。\
+      \死者曾经是那么地信任你，那么地依赖你。在其最需要帮助的时候，你却辜负了对方。\
+      \冰冷的棺材、前来吊唁的亲友——这一切都是因为你。\
+      \但当你打开棺材，里面并没有遗体，只有一条长长的石道，通往地下深处。\
+      \突然其中一个吊唁者把你往前推了一把，你从棺材边上掉了进去，一边身子痛苦地着地，落到底下的坑洞。\
+      \你站起身来，发现自己唯一的出路：通向别处的一条石拱道……"
     ]
 
 miskatonicOrScholarDream :: FlavorText
 miskatonicOrScholarDream =
   FlavorText
-    (Just "_米斯卡塔尼克_ or _学者_梦境")
-    [ BasicEntry "You are in an old, forgotten library, surrounded by the knowledge of the\
-      \ ancients. Hundreds of thousands of tomes line the shelves around you,\
-      \ ascending into an empty void above. The dim halls smell of musty pages and\
-      \ melting wax. Taking one of the thick tomes from a nearby shelf, you begin\
-      \ to read. Although you cannot seem to read any of the words, you are utterly\
-      \ absorbed by the tale the pages weave. Your surroundings fade into\
-      \ triviality as time passes. Nothing matters but the shapes of the crimson\
-      \ ink; all else is meaningless in the face of such stark truths. All around\
-      \ you, the library burns to its foundations. Just as the flames reach you, a\
-      \ door out of the library calls to you. Somehow, it stands unburned among the\
-      \ flames."
+    (Just "_米斯卡塔尼克_ 或 _学者_梦境")
+    [ BasicEntry "你在一座古老的、被人遗忘的图书馆里，被古代知识所包围。\
+      \成千上万的书籍罗列在你周围的书架上，高耸直插上方的虚空。\
+      \昏暗的大厅里散发着书页的霉味和蜡融化的气味。\
+      \你从旁边的书架上拿起一本厚厚的书，开始读了起来。\
+      \虽然这上面的字你一个都不认识，但你完全被书中所写的故事所吸引。\
+      \随着时间的流逝，你周围的一切渐渐失去了意义，除了这深红色的墨迹——在如此赤裸裸的事实面前，其他一切都不再重要。\
+      \在你周围，整座图书馆从地基烧了起来。\
+      \就在火焰烧到你身上之前，一扇离开图书馆的门呼唤着你。\
+      \不知为何，那扇门伫立在火海中却没有燃烧。"
     ]
 
 veteranDream :: FlavorText
 veteranDream =
   FlavorText
     (Just "_老兵_梦境")
-    [ BasicEntry "You are in a muddy, soot-filled trench. All around you, the thunderous\
-      \ din of war rages on and on, never ending. Dead litter the trenches: friends\
-      \ and comrades-in-arms who lost their lives over nothing, in a land far from\
-      \ home. You peer over the rim of the trench and into no-man’s-land, a barren\
-      \ waste of broken, charred countryside where death is certain. And there, you\
-      \ see it: a lone wooden door standing among the rubble and dirt. You know it\
-      \ is your only way out. Gripping your rifle tight, you go over the top and\
-      \ run headlong into a hail of deadly bullets, explosions rocking the ground\
-      \ around you."
+    [ BasicEntry "你在泥泞的、满是煤灰的战壕里，周围不断响起战争雷鸣般的巨响，无休无止。\
+      \战壕里七倒八歪地躺着许多尸体：\
+      \他们是你的朋友和战友，在这远离家乡的地方白白丧生。\
+      \你从战壕边缘向无人区望去，那是一片荒芜的废墟，满目疮痍，尸横遍野。\
+      \在那儿你看到了一扇孤零零的木门，伫立在碎石与泥土之间。你知道，那是你唯一的出路。\
+      \你紧紧握着自己的步枪，跳出战壕，迎着枪林弹雨，在被爆炸震撼的地面上奔跑。"
     ]
 
 wayfarerDream :: FlavorText
 wayfarerDream =
   FlavorText
-    (Just "_旅人_")
-    [ BasicEntry "You trudge chest-deep through a brackish swamp. Impossibly large\
-      \ bulrushes tower over you, and clouds of strange, iridescent insects swarm\
-      \ through the fetid air. With each step, your feet sink deeper into the soft\
-      \ muck, threatening to pull you under. You feel something slick and cold\
-      \ glide across your leg, and you lunge toward dry land—but the more you\
-      \ struggle, the farther you sink. In the blink of an eye, you are consumed\
-      \ whole by the mire, yet you are still falling ever downward. Eventually, you\
-      \ are deposited onto a stone floor along with a small mudslide. You find\
-      \ yourself in a sealed chamber, lit by the pale- blue glimmering of strange\
-      \ hieroglyphs. The symbols frame an intricate golden door: the door to the\
-      \ crypt you’ve been searching for."
+    (Just "_旅人_梦境")
+    [ BasicEntry "你在深度齐胸的沼泽里艰难跋涉。\
+      \不可思议的巨大蒲草高悬在你上方，在恶臭的空气中，有色彩斑斓的怪异昆虫成群地飞行。\
+      \你每走一步，脚便愈发陷入松软的淤泥之中，眼看就要把你拉到底下去。\
+      \你感觉到有种冰冷而光滑的东西滑过了你的腿，于是你向陆地猛冲——但你越是挣扎，你就陷得越深。\
+      \眨眼间，你就被泥沼完全吞噬了，而且还在继续下沉。\
+      \最后，你随着一小股泥流一同倾倒在石质地面上。\
+      \你发现自己位于一间密室，奇怪的象形文字发出的黯淡蓝光照亮了这个房间。\
+      \这些符号构成了一道图案复杂的金色大门：这道门通往的正是你一直寻找的地穴。"
     ]
 
 neutralDream1 :: FlavorText
 neutralDream1 =
   FlavorText
     (Just "中立梦境1")
-    [ BasicEntry "You toss and turn but do not sleep, not even for a moment. Your mind is\
-      \ filled with discomfort and dark thoughts: thoughts of failure, of\
-      \ ineptitude, of loss. Your brow is covered in sweat. No matter how you lie,\
-      \ your bed is either too hot or too cold. Finally, sick of getting nowhere,\
-      \ you rise and head to the sink to splash some water on your face. That is\
-      \ when you realize the layout of your room is not as it was before—and the\
-      \ door to your bathroom has been replaced with a large gateway of onyx and\
-      \ marble."
+    [ BasicEntry "你辗转反侧，片刻也无法入睡。\
+      \你满脑子都是不安和阴暗的想法：想到你的失败、无能、所爱的失去。\
+      \你额上满是汗水。不管用什么姿势，你的床铺不是太冷就是太热，总也无法入眠。\
+      \最后，徒劳的挣扎让你厌烦，你起身朝洗手池走去，想往脸上泼些水。\
+      \这时你才意识到，房间的布局与之前不同——通往浴室的门变成了一扇由玛瑙和大理石制成的大门。"
     ]
 
 neutralDream2 :: FlavorText
 neutralDream2 =
   FlavorText
     (Just "中立梦境2")
-    [ BasicEntry "You sit on the back patio of what seems like your childhood home, but\
-      \ something is off. You don’t recognize your family...the plants in the back\
-      \ yard are arranged differently...and the sky is a patchwork of rotting\
-      \ corpses, raining dismembered body parts onto the landscape. Your not-family\
-      \ watches this precipitation of corpses calmly, discussing the weather it as\
-      \ if it were a banal occurrence. This continues even as the intermittent\
-      \ thudding of hands and feet onto your roof intensifies into a torrent of\
-      \ maimed torsos that causes the ceiling to sag. You run outside, weaving\
-      \ through the deadly rain, and head instinctively toward the edge of your\
-      \ parents’ property. As you hear the crash of the house collapsing behind\
-      \ you, you push away the fallen limbs piling atop an old, familiar spot and\
-      \ are relieved to find the weathered wood of a cellar door."
+    [ BasicEntry "你坐在后院的平台上，这里像是你儿时的家，但有些不对劲。\
+      \眼前的不是你的家人……后院里的植物排列也不同……天空由一具具腐烂尸体拼接而成，破碎的尸块像雨点一样落在地上。\
+      \并非你家人的人们讨论着天气，平静地看着尸块坠落，仿佛眼前这一幕已司空见惯。\
+      \事态逐渐激化，从残肢断臂时而砸落在天花板砰砰作响，演变成残缺的躯干如一股洪流，砸得天花板下垂变形。\
+      \你穿梭在这漫天尸雨之中，往外跑去，本能地离开你双亲的这座房子。\
+      \就在你听到房子在你身后倒塌时，你来到熟悉的老地方，推开上方堆积的坠落的肢体，发现一口地窖的风化木门，你松了口气。"
     ]
 
 noResolution :: FlavorText
 noResolution =
   FlavorText
-    (Just "No resolution")
-    [ BasicEntry "You are nudged into consciousness by an old, scarred cat. “Hey. You all\
-      \ right, human?"
-    , BasicEntry "I’m dreaming, you remember, and suddenly the talking cat doesn’t seem\
-      \ quite as weird. Exhausted, you manage to rise to your feet, brushing off\
-      \ the dirt caked on your clothing. “You’re lucky you weren’t harmed before we\
-      \ arrived,” a human voice calls out to you. It belongs to a blond-haired man\
-      \ in a brown traveling coat, who leans against a nearby tree. “These woods\
-      \ are not forgiving to the faint of heart.” The scarred cat walks to the\
-      \ man’s side, and the man leans over to pet its back."
-    , BasicEntry "You ask the man where you are and how he came to this place, but he cuts\
-      \ you off. “I will explain in due time. For now, we must follow the path to\
-      \ the town of Ulthar. It is a safe place, relatively speaking. There you may\
-      \ recover from your ordeals.” He turns to the cat and utters a word in an odd\
-      \ language—a password of sorts, you suspect—but the cat simply wanders off\
-      \ toward a hedge, where you see several other cats banded together. “Do it\
-      \ yerself,” it replies."
-    , BasicEntry "“Don’t mind the cats,” the man says to you quietly as the cats depart.\
-      \ “They are useful allies, but also independent creatures with no need for\
-      \ you or me. When we reach Ulthar, you may get the chance to meet others of\
-      \ their kind. But first things first.” Together, you leave the eaves of the\
-      \ enchanted forest behind."
+    (Just "未达成任何结局")
+    [ BasicEntry "一只带有伤疤的老猫把你弄醒：“嘿。人类，你还好吗？”"
+    , BasicEntry "你想起自己在做梦，突然间，你对于会说话的猫也不再感到奇怪了。\
+      \筋疲力竭的你站起身来，拍拍衣服上粘结的尘土。\
+      \“你可真走运，在我们来之前没缺胳膊掉条腿。”\
+      \一道人类的声音对你说。\
+      \这声音的主人是个穿着棕色旅行大衣的金发男子，他靠在旁边的一棵树上。\
+      \“这片树林对胆小的人来说可危险了。”\
+      \带有伤疤的猫走到男子旁边，男子弯下腰抚摸它的背。"
+    , BasicEntry "你向那名男子发问，你现在在哪儿，他是怎么来到这里的，但他打断了你：\
+      \“我会在适当的时候解释的。\
+      \现在，我们得循着道路前往乌撒之城。\
+      \相对来说，那里很安全。到了那里你可以好好歇息，从你遭受的苦难中恢复过来。”\
+      \他转向那只猫，用一种奇怪的语言说了一句话——你怀疑那是某种密码——但那只猫只是朝一道树篱走去，那里聚集着其他几只猫。\
+      \“汝自为之。”它回答道。"
+    , BasicEntry "“不用在意那些猫。”猫群离开时，男子悄悄地对你说，\
+      \“它们是能干的帮手，但也是一种独立的生物，它们不需要你我。\
+      \等我们到了乌撒，你还有机会遇到别的猫。\
+      \但现在要解决当务之急。”你们一同离开了这片魔幻森林。"
     ]
 
 resolution1 :: FlavorText
 resolution1 =
   FlavorText
-    (Just "Resolution 1")
-    [ BasicEntry "The creatures chitter among themselves, and after a moment, a dozen of\
-      \ them retreat in the direction of the great tree beyond the beaten path.\
-      \ They return shortly afterward carrying a variety of grouse, quail, and\
-      \ pheasants in their mouths. You’re almost certain now that you are going\
-      \ crazy. And yet, the spectacle continues. The creatures timidly drop their\
-      \ “tribute” of birds in front of the cats and quietly depart. “My apologies\
-      \ on behalf of the Zoogs,” the man says as he approaches. “They are curious\
-      \ creatures, and not usually so...agitated. It is good that we showed up when\
-      \ we did.” The leader of the cats jumps on a tree stump and adds, “Yes, yes.\
-      \ Them vile Zoogs have done their part, now let’s do ours and leave this\
-      \ forsaken place. What say yeh?”"
-    , BasicEntry "You cannot contain your excitement. Zoogs, talking cats— everything you\
-      \ have read about is real. You begin to ask the man more about this world,\
-      \ but he cuts you off. “I will explain in due time. For now, we must follow\
-      \ the path to the town of Ulthar. It is a safe place, relatively speaking.\
-      \ There you may recover from your travels.” He turns to the old, scarred cat\
-      \ and utters a word in an odd language—a password of sorts, you suspect—and\
-      \ the cat replies with a quick nod. The rest of the cats, tribute in mouth,\
-      \ take a protective circular formation around you, and together you escape\
-      \ from the eaves of the enchanted forest."
+    (Just "结局 1")
+    [ BasicEntry "这些生物互相叽叽喳喳叫着，过了一会，它们中的好几十只朝着道路对面的大树逃走了。\
+      \不久它们又再回来，嘴里叼着各种松鸡、鹌鹑、野鸡。你几乎可以肯定，你疯了。\
+      \然而，这怪异的景象还在继续。\
+      \它们胆怯地将自己的鸟类“贡品”放在猫群前，然后安静地离开。\
+      \“我为祖格鼠所做的事向你道歉。”\
+      \男子走近并说道，“它们是一种好奇的生物，通常不会那么……激动。还好我们及时出现。”\
+      \猫群的头领从一棵树桩跳下，点头说：\
+      \“对，没错。可恶的祖格鼠既已进贡，现在该吾等动身，离开这个鬼地方。诸位怎么说？”"
+    , BasicEntry "你无法按捺自己的激动。\
+      \祖格鼠、会说话的猫——你在文章里读到的一切都是真的。\
+      \你开始询问那名男子，问他更多关于这个世界的事情，但他打断了你：\
+      \“我会在适当的时候解释的。现在，我们得循着道路前往乌撒之城。\
+      \相对来说，那里很安全。到了那里你可以好好歇息，从旅行中恢复过来。”\
+      \他转向那只带有伤疤的老猫，用一种奇怪的语言说了一句话——你怀疑那是某种密码——而那只猫迅速地点了一下头作为回应。\
+      \ 其他的猫嘴里叼着贡品，在你周围站成一圈以保护你，然后带你一起逃出了这片被施了魔法的森林。"
     ]
 
 resolution2 :: FlavorText
 resolution2 =
   FlavorText
-    (Just "Resolution 2")
-    [ BasicEntry "You hold a hand up to the new visitors, believing that you can defuse\
-      \ this situation on your own. Had you known these rodent-like creatures were\
-      \ intelligent all along, you might have tried to communicate with them much\
-      \ earlier. You inform them that you are just travelers in this faraway land\
-      \ and that you simply wish to pass through peacefully. The creatures chitter\
-      \ among themselves for a moment: “They are kind!” “They are not with the\
-      \ black cat after all!” “Summon the Council of Sages!” After a short while,\
-      \ several more of them appear, each with withering grey fur and a frail, thin\
-      \ body. The eldest one peeks behind you and states that they will aid you if\
-      \ you get the cats to leave."
-    , BasicEntry "Somehow, you contain your disbelief and politely ask the cats to come\
-      \ back another time. “All right,” the scarred cat replies, “but you ain’t\
-      \ seen the last of us.” The cats retreat to the edge of the woods, though\
-      \ their human companion stays behind with you. Once the cats are out of\
-      \ earshot, one of the elders offers you a gourd of what appears to be\
-      \ fermented tree sap, which you accept graciously."
-    , BasicEntry "“It is the wine of the moon-tree,” the man behind you explains quietly,\
-      \ stepping forward. “The Zoogs do not give such gifts lightly. They are\
-      \ curious creatures, but not without wisdom. Now that you may speak freely\
-      \ with their elders, try asking them a question. They know more of the\
-      \ dealings of this land than you might think.”"
-    , BasicEntry "You describe the author Virgil Gray and ask the Zoogs if they have seen\
-      \ a man fitting that description pass through these woods. You add that he\
-      \ would have walked this path many times. A hush falls over the Zoogs, and\
-      \ some of them immediately depart into the deep foliage. “We have met this\
-      \ human,” one of the elders replies with a flutter just louder than a\
-      \ whisper. “He often comes this way. He is kind but foolish. Take the road to\
-      \ Ulthar. You may meet him.” Then it adds with a low growl: “...but beware\
-      \ the cat that follows him. All cats are liars, but the black cat\
-      \ especially.” You thank the ancient Zoog for its wisdom and depart, led by\
-      \ the blond man and his feline escort. The cats eye you suspiciously after\
-      \ your discussion with the Zoogs. The man breaks the tension. “If you are\
-      \ heading to Ulthar to find this friend of yours, allow me to guide you\
-      \ there. It is a safe place, relatively speaking. There you may recover from\
-      \ your travels.”"
-    , BasicEntry "Zoogs. Talking cats. This can’t all be a figment of your imagination.\
-      \ Somehow, you can see a layer of truth beneath all of this absurdity. For\
-      \ better or for worse, the Zoog council has confirmed the reality of your\
-      \ situation: the Dreamlands are real, and Virgil Gray is here."
+    (Just "结局 2")
+    [ BasicEntry "你相信单凭自己就能化解眼前的局面，举手示意来客不要介入。\
+      \如果你早知道这些啮齿类动物一直以来都很聪明，你或许会早些尝试与它们交流。\
+      \你告诉它们，你是从遥远的地方来的旅行者，你只是想通过这里，不想引起任何矛盾。\
+      \它们叽叽喳喳地聊了一会：“他们没有恶意！”\
+      \“看来他们和黑猫不是一伙的！”\
+      \“召唤贤者议会！”\
+      \过了一会，又出现了几只老鼠，它们身体瘦弱，长着干枯的灰色毛发。\
+      \最年迈的老鼠偷偷看向你身后，说如果你能把猫弄走，它们就会帮助你。"
+    , BasicEntry "不知怎的，尽管你满腹疑窦，还是礼貌地请猫下次再来。\
+      \“好吧。”带有伤疤的猫答道，“但今次不会是我们最后一次见面。”\
+      \猫群朝着森林边缘撤退，但它们的人类同伴还留在你身边。\
+      \等猫群听不到这里的声音，其中一只老鼠长者递给你一个葫芦，里面盛的像是发酵的树汁，你欣然收下。"
+    , BasicEntry "“这是用月之树酿成的酒。”\
+      \你身后的男子朝前走了一步，悄声解释道，“祖格鼠不会轻易送出这样贵重的礼物。\
+      \它们是好奇的生物，但并不愚蠢。\
+      \现在你可以和它们的长者尽情畅谈了，试着问问它们问题吧。\
+      \它们可比你想象中更了解这片土地的事情呢。”"
+    , BasicEntry "你描述那位作家维吉尔·格雷的样貌，并问祖格鼠有没有看到他从树林里经过。\
+      \你补充说，那名男子曾多次走过这条路。\
+      \鼠群一片寂静，随后一些老鼠立即逃进了茂密的树叶之中。“我们见过你说的这个人。”\
+      \其中一只老鼠长者话音颤抖，用只比耳语大一点点的声音说道。\
+      \“他常常从这条路来。他人不错，就是有点傻。往乌撒之城去，你或许能遇上他。”\
+      \然后它低声咆哮着加了一句：“……但要当心那只跟着他的猫。所有的猫都是骗子，但黑猫尤其狡诈。”\
+      \你感谢远古祖格鼠为你指点迷津，然后便在金发男子和他的猫咪护送之下离开。\
+      \你和祖格鼠交谈过后，猫群狐疑地看着你。\
+      \男子开口打破了这股紧张感：“要是你想去乌撒找你那位朋友，请允许我带你到那儿去吧。\
+      \到了那里你可以好好歇息，从旅行中恢复过来。”"
+    , BasicEntry "祖格鼠。会说话的猫。这不可能全是你想象出来的。\
+      \不知道为什么，你知道真相就在这怪诞场景背后。\
+      \不论如何，你已经从祖格鼠贤者议会那里确认了你如今的情况：幻梦境是真实存在的，而维吉尔·格雷也在这里。"
     ]
