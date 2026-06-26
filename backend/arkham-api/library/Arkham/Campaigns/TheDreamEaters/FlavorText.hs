@@ -7,45 +7,29 @@ import Arkham.Text
 prologue :: FlavorText
 prologue =
   FlavorText
-    (Just "Prologue")
-    [ BasicEntry "*Friday, February 13th, 1925*"
-    , BasicEntry "Something odd was happening in Arkham, Massachusetts."
-    , BasicEntry "Typically, this would not be a surprise to the residents of the dreary New\
-      \ England town. Indeed, Arkham has always been well-known for its strange—some\
-      \ would say supernatural—occurrences. The nature of this particular circumstance,\
-      \ however, was anything but typical."
-    , BasicEntry "It all began in the latest issue of Tales from Nevermore. A writer by the name\
-      \ of Virgil Gray described a journey he had taken in his dreams—a journey he\
-      \ claimed was not a work of fiction on his part. He wrote of a long, spiraling\
-      \ staircase, an unbearably hot pillar of sentient fire, a tree that came from the\
-      \ moon, and a curious talking cat...among other things equally difficult to\
-      \ believe. But it wasn’t this extraordinary tale that first drew your attention.\
-      \ Soon after Virgil’s tale was published, Tales from Nevermore began to receive\
-      \ and publish letter after letter from those who had read Virgil’s story and\
-      \ claimed to have experienced the same exact dream. Before long, the Arkham\
-      \ Advertiser picked up the story, and news of this strange phenomenon reached the\
-      \ ears of experts."
-    , BasicEntry "Virgil Gray was convinced to undergo therapy at the local asylum, and many more\
-      \ who shared in the writer’s psychosis were committed as well. The prevailing\
-      \ theory among academics is that Virgil’s dream felt so real that he could not\
-      \ separate fact from fiction, and his writings spread his delusions to others\
-      \ like a form of shared hysteria. You remain unconvinced. After all, there is\
-      \ much that is not known about the simple act of dreaming. Medical experts have\
-      \ wildly differing theories on the state of one’s brain during sleep. Recently,\
-      \ experts like Sigmund Freud have proposed that dreams are manifestations of\
-      \ one’s subconscious desires, fears, or obsessions. Fortune tellers, for their\
-      \ part, have long believed that dreams can be sifted and interpreted in order to\
-      \ tell the dreamer’s past or future. But if these theories are true, how could\
-      \ multiple parties—all from very different walks of life—have the same shared\
-      \ experiences in their dreams? What if our modern understanding of sleep is all\
-      \ wrong? What if there really is a place our consciousness travels to when we\
-      \ sleep—a land of dreams that exists beyond our waking world?"
-    , BasicEntry "You and your companions have gathered together to get to the bottom of this\
-      \ strange phenomenon. If others in town can travel to another world in their\
-      \ dreams, perhaps you can, too. You’ve re-created the circumstances of Virgil’s\
-      \ journey perfectly. If all goes well, half of you will take the trip to this\
-      \ “dreamland” and back. The rest will stay in the waking world, studying your\
-      \ companions’ sleep patterns to ensure nothing goes wrong..."
+    (Just "序幕")
+    [ BasicEntry "*1925年2月13日，星期五*"
+    , BasicEntry "马萨诸塞州的阿卡姆镇发生了一些怪事。"
+    , BasicEntry "通常来说，这座阴郁的新英格兰小镇上的居民并不会对其大惊小怪。\
+      \阿卡姆的确一直以怪事——有人称之为超自然现象——著称。然而，这次的情况实际上前所未见。"
+    , BasicEntry "一切要从最新一期《传奇故事》说起。\
+      \一位名叫维吉尔·格雷的作家写下了自己梦中经历的一次旅行——他声称这不是自己编造的小说。\
+      \他描写了一条长长的螺旋楼梯、一柱灼热难当、似是活物的火焰、一棵来自月球的树、一只会说话的古怪猫咪……\
+      \还有其他难以置信的景象。但是最初吸引你注意力的并不是这篇非同寻常的故事。\
+      \维吉尔的故事刊登后不久，《传奇故事》陆续收到并刊登了一封封信件，寄信人阅读维吉尔的故事后声称经历过一模一样的梦境。\
+      \不久，阿卡姆报社报道了这则故事，以及专家们也得知了这一奇怪现象的新闻。"
+    , BasicEntry "有人说服作者维吉尔·格雷到当地的精神病院接受治疗，许多和他一样精神错乱的人也被送进了精神病院。\
+      \学界普遍认为，维吉尔的梦境真实到他本人分不清现实与虚幻，而他的作品将他的幻觉传播给他人，使读者也变得歇斯底里。\
+      \你仍然无法接受这一结论。\
+      \毕竟，人类对于“做梦”这个行为仍不甚了解。对于睡眠中的大脑状态，医学专家的各种理论之间存在较大分歧。\
+      \近来，包括西格蒙德·弗洛伊德在内的许多专家认为，梦是一个人潜意识里的欲望、恐惧或执念的表现。\
+      \预言家们则一直以来都相信，通过筛选和解释梦境，就能得知入梦者的过去和未来。\
+      \但是，如果这些理论都是真的，那么怎么会有那么多人——来自各行各业的人——都梦到同一段经历？\
+      \假如当代对睡眠的所有理解都是错的呢？假如我们的意识在睡梦中真的能到达一个地方——存在于清醒世界以外的梦之国度呢？"
+    , BasicEntry "你和你的同伴们聚集起来，彻查这一怪事的真相。\
+      \如果说这座镇上有人能进入梦中世界，那么，或许你们也能。\
+      \你已经梦到了维吉尔所经历的梦境，完全一致。如果一切顺利，你们中的一半人将出发前往“幻梦境”并返回。\
+      \其余的人将留在清醒世界，研究同样的睡眠模式以确保一切正常……"
     ]
 
 theBlackCat1 :: FlavorText
