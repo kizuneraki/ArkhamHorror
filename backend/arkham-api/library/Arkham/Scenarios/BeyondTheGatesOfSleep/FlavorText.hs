@@ -7,37 +7,30 @@ import Arkham.Text
 guardianDream :: FlavorText
 guardianDream =
   FlavorText
-    (Just "Guardian ({guardian}) dream")
-    [ BasicEntry "You circle a sullen hill shrouded in darkness and steeped in fog that seems to\
-      \ swallow all sound. You don’t know what rests within the hill, but it feels\
-      \ older than this world, and it seems like it is watching you. You dare not turn\
-      \ to face the barrow, yet you know you cannot leave it, so instead you endlessly\
-      \ patrol it. In the surrounding hedgerows, you catch glimpses of twisted shadows\
-      \ darting to and fro, but whenever you turn your torch upon them, they vanish.\
-      \ You begin to run but are frozen by a loud knock from behind you. When you turn,\
-      \ the fog parts, and you finally see the base of the hill, where a heavy door of\
-      \ weathered slate calls to you."
+    (Just "守卫者({guardian})梦境")
+    [ BasicEntry "你绕着一座笼罩在黑暗中的阴沉山丘打转，浸淫山体的浓雾似乎吞噬了一切声音。\
+      \你不知道这座山里还有些什么，但你感觉它比这世上的一切都要古老，而且它像是在看着你。\
+      \你不敢面对这座古坟似的山丘，但你知道自己无法离开它，所以你无休无尽地绕山巡逻。\
+      \在周围的灌木丛中，你瞥见一些扭曲的影子来回穿梭，但当你举着火把去看，它们却又消失了。\
+      \你开始逃跑，但身后一声巨大的敲击吓得你停在原地。\
+      \你转身时，雾气散去，你终于见到了这座山的底部，一道风化的厚重石门在那儿呼唤着你。"
     ]
 
 seekerDream :: FlavorText
 seekerDream =
   FlavorText
-    (Just "Seeker ({seeker}) dream")
-    [ BasicEntry "You hurry through the halls of a university you barely recognize, cradling\
-      \ several textbooks in your arms as you scurry past other students and\
-      \ faculty members. You don’t know how it is possible that you forgot the date\
-      \ of your exam, but if you don’t arrive soon, you know you will fail the\
-      \ class. Somehow, you don’t even remember the course’s subject matter or its\
-      \ curriculum, even though you know it is the end of the semester. It is not\
-      \ like you to skip class or forget to study. You can hear the other students\
-      \ snickering to themselves as you pass. When you reach the end of the hall,\
-      \ the classroom door looms ominiously before you."
+    (Just "探求者({seeker})梦境")
+    [ BasicEntry "在一所你几乎不认得的大学里，你抱着几本教科书匆匆穿过走廊，与其他师生擦肩而过。\
+      \你不知道自己怎么可能会把考试日期给忘了，但你知道要是不快些赶到考场，这门课你就不及格了。\
+      \不知道为什么，尽管你知道现在是学期末，但你连这门课叫什么、教过些什么都忘得一干二净。\
+      \不知道为什么，尽管你知道现在是学期末，但你连这门课叫什么、教过些什么都忘得一干二净。\
+      \当你走到走廊尽头，教室大门不详地出现在你面前。"
     ]
 
 rogueDream :: FlavorText
 rogueDream =
   FlavorText
-    (Just "Rogue ({rogue}) dream")
+    (Just "流浪者({rogue})梦境")
     [ BasicEntry "You conceal a grin as you examine your cards. Jack of diamonds, queen of\
       \ spades for the nut straight. Your stack of chips is growing larger with\
       \ each hand, and this will be no different. Bets fly back and forth until it\
@@ -55,7 +48,7 @@ rogueDream =
 mysticDream :: FlavorText
 mysticDream =
   FlavorText
-    (Just "Mystic ({mystic}) dream")
+    (Just "潜修者({mystic})梦境")
     [ BasicEntry "You traverse an enchanted path full of color and vibrancy. Wisps of\
       \ light hang in the air, bobbing up and down as you approach. With each step\
       \ you take, the flora along the path atrophy, following no laws of nature.\
@@ -71,7 +64,7 @@ mysticDream =
 survivorDream :: FlavorText
 survivorDream =
   FlavorText
-    (Just "Survivor ({survivor}) dream")
+    (Just "求生者({survivor})梦境")
     [ BasicEntry "You are fleeing through a dark, cramped hall of vine-covered wood.\
       \ Something inexplicable chases you through the murk. You are too terrified\
       \ to turn and look upon your pursuer, but nonetheless you know that if it\
@@ -85,7 +78,7 @@ survivorDream =
 criminalDream :: FlavorText
 criminalDream =
   FlavorText
-    (Just "_Criminal_ dream")
+    (Just "_罪犯_梦境")
     [ BasicEntry "The blare of sirens echoes through the streets behind you. They’re\
       \ gaining on you. They have always been hot on your heels, and you were\
       \ always one step ahead...until now. You run down an alleyway, and a\
@@ -100,7 +93,7 @@ criminalDream =
 drifterDream :: FlavorText
 drifterDream =
   FlavorText
-    (Just "_Drifter_ dream")
+    (Just "_漂泊者_梦境")
     [ BasicEntry "You meander through a field of flowers, a warm spring breeze nudging\
       \ your steps forward. A train track divides the field, and as you meet its\
       \ parallel lines, the roaring clatter of steam and iron lumbers toward you.\
@@ -116,7 +109,7 @@ drifterDream =
 hunterDream :: FlavorText
 hunterDream =
   FlavorText
-    (Just "_Hunter_ dream")
+    (Just "_猎手_梦境")
     [ BasicEntry "You stalk your prey through a decrepit house, its halls smelling of mold\
       \ and dust. The creature you hunt is an abomination from an unnatural world.\
       \ It threatens humanity’s very existence with its presence. You catch its\
@@ -131,7 +124,7 @@ hunterDream =
 medicOrAssistantDream :: FlavorText
 medicOrAssistantDream =
   FlavorText
-    (Just "_Medic_ or _Assistant_ dream")
+    (Just "_医师_ or _助理_梦境")
     [ BasicEntry "You stand in front of a closed casket. Mourners in black clothing stand\
       \ in a line at your side, waiting for you to say your last words. Tearfully,\
       \ you place a hand on the casket. The hard, cold wood feels dead under your\
@@ -148,7 +141,7 @@ medicOrAssistantDream =
 miskatonicOrScholarDream :: FlavorText
 miskatonicOrScholarDream =
   FlavorText
-    (Just "_Miskatonic_ or _Scholar_ dream")
+    (Just "_米斯卡塔尼克_ or _学者_梦境")
     [ BasicEntry "You are in an old, forgotten library, surrounded by the knowledge of the\
       \ ancients. Hundreds of thousands of tomes line the shelves around you,\
       \ ascending into an empty void above. The dim halls smell of musty pages and\
@@ -165,7 +158,7 @@ miskatonicOrScholarDream =
 veteranDream :: FlavorText
 veteranDream =
   FlavorText
-    (Just "_Veteran_ dream")
+    (Just "_老兵_梦境")
     [ BasicEntry "You are in a muddy, soot-filled trench. All around you, the thunderous\
       \ din of war rages on and on, never ending. Dead litter the trenches: friends\
       \ and comrades-in-arms who lost their lives over nothing, in a land far from\
@@ -180,7 +173,7 @@ veteranDream =
 wayfarerDream :: FlavorText
 wayfarerDream =
   FlavorText
-    (Just "_Wayfarer_ dream")
+    (Just "_旅人_")
     [ BasicEntry "You trudge chest-deep through a brackish swamp. Impossibly large\
       \ bulrushes tower over you, and clouds of strange, iridescent insects swarm\
       \ through the fetid air. With each step, your feet sink deeper into the soft\
@@ -197,7 +190,7 @@ wayfarerDream =
 neutralDream1 :: FlavorText
 neutralDream1 =
   FlavorText
-    (Just "Neutral dream")
+    (Just "中立梦境1")
     [ BasicEntry "You toss and turn but do not sleep, not even for a moment. Your mind is\
       \ filled with discomfort and dark thoughts: thoughts of failure, of\
       \ ineptitude, of loss. Your brow is covered in sweat. No matter how you lie,\
@@ -211,7 +204,7 @@ neutralDream1 =
 neutralDream2 :: FlavorText
 neutralDream2 =
   FlavorText
-    (Just "Neutral dream")
+    (Just "中立梦境2")
     [ BasicEntry "You sit on the back patio of what seems like your childhood home, but\
       \ something is off. You don’t recognize your family...the plants in the back\
       \ yard are arranged differently...and the sky is a patchwork of rotting\
