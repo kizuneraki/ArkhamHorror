@@ -89,30 +89,30 @@
   "brokeTheLawOfUlthar": "<div class='green'><p>_*If (your investigator name) has broken the law of Ulthar* and you are not killed or driven insane:_</p><p>You awaken one night to the sound of hissing all around you. Hundreds of piercing cat eyes glare at you in the dark. One of the creatures leaps onto your chest, its claws digging painfully into your skin. “Did you think we would not find you?” Its eyes flash. It bares its teeth, and the rest of the cats close in.</p><p class='basic right'>How dare you! You are _killed_.</p></div>",    
 
   "label": {
-    "beyondTheGatesOfSleep": "Beyond the Gates of Sleep",
-    "wakingNightmare": "Waking Nightmare",
-    "darkSideOfTheMoon": "Dark Side of the Moon",
-    "pointOfNoReturn": "Point of No Return",
-    "whereTheGodsDwell": "Where the Gods Dwell",
-    "weaverOfTheCosmos": "Weaver of the Cosmos",
-    "theSearchForKadath": "The Search for Kadath",
-    "aThousandShapesOfHorror": "A Thousand Shapes of Horror",
-    "theBlackCat2NewsOfYourPlight": "Tell your companions of your quest, your plight, and your peril. The black cat will return to you once this message is delivered. This may put an undue burden on your companions.",
-    "theBlackCat2KnowledgeOfDreamlands": "Tell your companions about your new friends and about the Dreamlands.",
-    "theBlackCat2WarnTheOthers": "Tell your companions that they are in danger, and that you are safe. The black cat will stay with them once this message is delivered. This might make your quest a little more difficult.",
-    "theBlackCat2DontTrust": "You don't trust this creature one bit. You threaten the black cat, warning it not to approach your friends under any circumstance. The black cat yawns and vanishes out the door.",
-    "blackCatWandersOff": "The black cat wanders off before you can reply, its pitch-black fur melding into the darkness of the Underworld.",
-    "youDidNotAskForItRequestAid": "Tell your companions that you are in trouble. The black cat will return to you with aid once this message is delivered. This may put an undue burden on your companions.",
-    "youDidNotAskForItKnowledgeOfUnderworld": "Tell your companions about the Underworld. The black cat will then go elsewhere.",
-    "youDidNotAskForItWarnTheOthers": "Tell your companions that you are safe. The black cat will stay with them once this message is delivered. This might make your quest a little more difficult.",
-    "blackCatBoundsOff": "The black cat bounds off into the void of space before you get the chance to ask it anything else.",
-    "theGreatOnes1SpokeOfNyarlathotep": "Tell your companions about the threats that you face. The black cat will return to you with aid once this message is delivered. This may put an undue burden on your companions.",
-    "theGreatOnes1SpokeOfAtlachNacha": "Tell your companions that you will be okay. The black cat will stay with them once this message is delivered. This might make your quest a little more difficult."
+    "beyondTheGatesOfSleep": "梦境门外",
+    "wakingNightmare": "清醒噩梦e",
+    "darkSideOfTheMoon": "月之暗面",
+    "pointOfNoReturn": "无归之地",
+    "whereTheGodsDwell": "神居之所",
+    "weaverOfTheCosmos": "编织宇宙",
+    "theSearchForKadath": "寻觅卡达斯",
+    "aThousandShapesOfHorror": "万千骇形",
+    "theBlackCat2NewsOfYourPlight": "告诉同伴你将展开的探索，和你陷入的危险与困境。黑猫传达消息后会回到你身边。这可能会给你的同伴增加更重的负担。",
+    "theBlackCat2KnowledgeOfDreamlands": "告诉同伴你认识了些新朋友，并告诉他们幻梦境的事情。",
+    "theBlackCat2WarnTheOthers": "告诉同伴他们正面临危险，而你们一切安好。黑猫传达消息后会待在他们身边。这可能会让你的探索变得更困难一些。",
+    "theBlackCat2DontTrust": "你压根就不相信这个生物。你威胁黑猫，警告它无论如何都别接近你的朋友。黑猫打了个哈欠，消失在门外。",
+    "blackCatWandersOff": "黑猫踱步离开，随后你还没来得及回话，它漆黑的身影便融入了地下世界的黑暗之中。",
+    "youDidNotAskForItRequestAid": "告诉你的同伴你遇到了麻烦。黑猫传达消息后会回到你身边。这可能会给你的同伴增加更重的负担。",
+    "youDidNotAskForItKnowledgeOfUnderworld": "告诉你的同伴关于地下世界的信息。随后黑猫会离开。",
+    "youDidNotAskForItWarnTheOthers": "告诉你的同伴你安然无恙。黑猫传达消息后会待在他们身边。这可能会让你的探索变得更困难一些。",
+    "blackCatBoundsOff": "黑猫纵身跃入宇宙的虚空，在你有机会再问它其他事情之前便消失了。",
+    "theGreatOnes1SpokeOfNyarlathotep": "告诉你的同伴你所面对的威胁。黑猫会在传达这条消息后带着援助回到你身边。这可能会给你的同伴带来过重的负担。",
+    "theGreatOnes1SpokeOfAtlachNacha": "告诉你的同伴你会没事的。黑猫会在传达这条消息后留在他们身边。这可能会让你的任务稍微变得更困难。"
   },
   "question": {
-    "whichScenarioToStart": "Which scenario would you like to start with",
-    "chooseDeckForPartA": "Choose Deck For Part A",
-    "chooseDeckForPartB": "Choose Deck For Part B",
-    "proceedToWhichScenario": "Proceed to which scenario"
+    "whichScenarioToStart": "你想从哪个冒险开始？",
+    "chooseDeckForPartA": "为A部分选择卡组",
+    "chooseDeckForPartB": "为B部分选择卡组",
+    "proceedToWhichScenario": "要进入哪个冒险？"
   }
 }  
