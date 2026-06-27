@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { onBeforeUnmount, ComputedRef, ref, computed, watch, nextTick } from 'vue'
 import { useDebug } from '@/arkham/debug'
+import { useAi } from '@/arkham/ai'
 import { Game } from '@/arkham/types/Game'
 import { imgsrc } from '@/arkham/helpers'
 import { cardArt, cardImage } from '@/arkham/cardImages'
@@ -24,6 +25,7 @@ import ScarletKey from '@/arkham/components/ScarletKey.vue'
 import Treachery from '@/arkham/components/Treachery.vue'
 import Token from '@/arkham/components/Token.vue'
 import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
+import AiTargetMenu from '@/arkham/components/AiTargetMenu.vue'
 import PoolItem from '@/arkham/components/PoolItem.vue'
 import TokenPool from '@/arkham/components/TokenPool.vue'
 import * as Arkham from '@/arkham/types/Location'
@@ -48,6 +50,8 @@ const abilitiesEl = ref<HTMLElement | null>(null)
 const highlighter = useHighlighter()
 const { isMobile } = IsMobile()
 const dbCards = useDbCardStore()
+const ai = useAi()
+const aiMenuOpen = ref(false)
 
 const dragover = (e: DragEvent) => {
   e.preventDefault()
@@ -71,6 +75,7 @@ const image = computed(() => {
 })
 
 const id = computed(() => props.location.id)
+const aiTarget = computed(() => ({ tag: 'LocationTarget', contents: id.value }))
 const isExhausted = computed(() => props.location.enemyLocation && props.location.exhausted)
 const choices = useGameChoices(
   () => props.game,
@@ -141,6 +146,10 @@ onBeforeUnmount(() => {
 })
 
 async function clicked(e: MouseEvent) {
+  if (ai.targeting) {
+    aiMenuOpen.value = true
+    return
+  }
   clickCount++
   if (clickTimeout) {
     clearTimeout(clickTimeout)
@@ -542,7 +551,8 @@ const canShowCardsUnderneath = computed(() => {
   return playerCardsUnderneath.value.length > 0 && !hasFacedownCardsUnderneath.value
 })
 const showCardsUnderneath = () => emits('show', cardsUnderneathToShow, 'Cards Underneath', false, debug.active)
-const highlighted = computed(() => highlighter.highlighted.value === props.location.id)
+const isAttackTarget = computed(() => props.game.enemyAttackTargets.some((e) => e.target.contents === props.location.id))
+const highlighted = computed(() => highlighter.highlighted.value === props.location.id || isAttackTarget.value)
 
 function isVehicleAsset(assetId: string): boolean {
   const asset = props.game.assets[assetId]
@@ -618,7 +628,7 @@ const hasAnyLocationVehicleAssets = computed(() =>
                 :data-id="id"
                 class="card card--locations"
                 :src="image"
-                :class="{ 'location--can-interact': canInteract && !hasObjective, 'location--can-interact-cursor': canInteract }"
+                :class="{ 'location--can-interact': canInteract && !hasObjective, 'location--can-interact-cursor': canInteract, 'ai-target-hover': ai.targeting }"
                 draggable="false"
                 @drop="onDrop"
                 @dragover.prevent="dragover"
@@ -708,6 +718,16 @@ const hasAnyLocationVehicleAssets = computed(() =>
           :game="game"
           :position="isMobile ? 'top' : 'left'"
           @choose="chooseAbility"
+        />
+
+        <AiTargetMenu
+          v-model="aiMenuOpen"
+          :frame="frame"
+          kind="location"
+          :target="aiTarget"
+          :seat="ai.selectedSeat"
+          :game-id="game.id"
+          :position="isMobile ? 'top' : 'left'"
         />
 
         <button v-if="canShowCardsUnderneath" @click="showCardsUnderneath">
@@ -819,6 +839,20 @@ const hasAnyLocationVehicleAssets = computed(() =>
   cursor: pointer;
 }
 
+/* Dev-only "AI targeting mode": class is only bound while targeting is on, so
+   normal play is untouched. Green border + pale green wash on hover. */
+.ai-target-hover {
+  cursor: pointer;
+  transition: box-shadow 120ms ease, filter 120ms ease;
+}
+
+.ai-target-hover:hover {
+  border: 2px solid var(--ai-target);
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px var(--ai-target), 0 0 12px 3px rgba(74, 222, 128, 0.55);
+  filter: brightness(1.05) sepia(0.35) hue-rotate(55deg) saturate(1.3);
+}
+
 .location--can-interact-cursor {
   cursor: pointer;
 }
@@ -890,7 +924,7 @@ const hasAnyLocationVehicleAssets = computed(() =>
   }
 
   :deep(.token-container) {
-    width: 20px;
+    width: var(--card-token-width);
   }
 }
 

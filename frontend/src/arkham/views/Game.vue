@@ -9,7 +9,7 @@ import {
   shallowRef,
   watch,
 } from 'vue'
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import confetti from '@/effects/confetti'
 import { useWebSocket } from '@vueuse/core'
@@ -47,9 +47,13 @@ import {
 import * as Api from '@/arkham/api'
 import { useCardStore } from '@/stores/cards'
 import { useUserStore } from '@/stores/user'
+import { useEventStore } from '@/arkham/stores/event'
+import type { SharedEventState } from '@/arkham/types/EpicEvent'
 import { useMenu } from '@/composable/menu'
 import useEmitter from '@/composable/useEmitter'
 import { useDebug } from '@/arkham/debug'
+import { useAi } from '@/arkham/ai'
+import { useSettings } from '@/stores/settings'
 import { imgsrc } from '@/arkham/helpers'
 import { handleEmbeddedI18n } from '@/arkham/i18n'
 import { getGameLocalStorageItem, setGameLocalStorageItem } from '@/arkham/localStorage'
@@ -76,7 +80,9 @@ import GameLog from '@/arkham/components/GameLog.vue'
 import HistoryPanel from '@/arkham/components/HistoryPanel.vue'
 import ScenarioSettings from '@/arkham/components/ScenarioSettings.vue'
 import Settings from '@/arkham/components/Settings.vue'
+import OrganizerBar from '@/arkham/components/OrganizerBar.vue'
 import StandaloneScenario from '@/arkham/components/StandaloneScenario.vue'
+import AiControlPanel from '@/arkham/components/AiControlPanel.vue'
 import Draggable from '@/components/Draggable.vue'
 import Menu from '@/components/Menu.vue'
 import Prompt from '@/components/Prompt.vue'
@@ -104,6 +110,7 @@ type ServerResult =
   | { tag: 'GameShowUnder'; contents: string }
   | { tag: 'GameUI'; contents: string }
   | { tag: 'GameAudio'; contents: string }
+  | { tag: 'SharedStateUpdate'; contents: SharedEventState }
 
 export interface Props {
   gameId: string
@@ -113,11 +120,45 @@ export interface Props {
 const props = withDefaults(defineProps<Props>(), { spectate: false })
 
 const debug = useDebug()
+const ai = useAi()
+const settings = useSettings()
+// AI-investigator UI/driver is gated on the dev-only "AI Investigators" settings
+// flag (Settings → danger zone). The flag is itself `isDevBuild() && stored`, so
+// it is never enabled in production and defaults OFF in dev until toggled on.
+const aiDevEnabled = computed(() => settings.aiInvestigatorsEnabled)
 const emitter = useEmitter()
 const router = useRouter()
+const route = useRoute()
 const store = useCardStore()
 const userStore = useUserStore()
+const eventStore = useEventStore()
 const { addEntry, menuItems } = useMenu()
+
+// "Epic Multiplayer": the organizer dashboard's per-group links carry an
+// ?event=<id> query param. When present (and the loaded event marks this user as
+// the organizer), Game.vue renders the organizer bar above the board. The event
+// store is the source of truth for the sibling groups, role, and shared state.
+const eventQueryId = computed(() => {
+  const q = route.query.event
+  return typeof q === 'string' && q !== '' ? q : null
+})
+
+const organizerEventId = computed(() => {
+  const eid = eventQueryId.value
+  if (!eid) return null
+  const ev = eventStore.event
+  return ev && ev.id === eid && ev.role === 'organizer' ? eid : null
+})
+
+watch(
+  eventQueryId,
+  (eid) => {
+    if (!eid) return
+    if (eventStore.event?.id === eid) return
+    eventStore.load(eid).catch((e) => console.error(e))
+  },
+  { immediate: true },
+)
 const preloaded = new Set<string>()
 const preloading = new Set<string>()
 let mouseX = 0
@@ -395,10 +436,15 @@ const websocketUrl = computed(() => {
 })
 
 watch(
-  () => props.gameId,
-  async (newV, oldV) => {
-    if (!newV) return
-    if (newV === oldV) return
+  // Also react to `spectate`: the same Game.vue instance is reused when an
+  // organizer toggles between the Spectate (organizer) and Game (play-my-seat)
+  // routes for one gameId, so we must re-fetch in the new mode to pick up the
+  // player's seat/question (or drop them when spectating again).
+  () => [props.gameId, props.spectate] as const,
+  async (newVals, oldVals) => {
+    const [newId] = newVals
+    if (!newId) return
+    if (oldVals && newId === oldVals[0] && newVals[1] === oldVals[1]) return
     await fetchGame(props.gameId, props.spectate).then(
       async ({ game: newGame, playerId: newPlayerId, multiplayerMode }) => {
         preloadImages(newGame)
@@ -565,6 +611,197 @@ const { send, close } = useWebSocket(websocketUrl, {
   onConnected,
   onMessage,
 })
+
+// --- AI-investigator driver (dev-only) ---------------------------------------
+// For each parked question belonging to an enabled AI seat, schedule (after that
+// seat's response delay) an `AiAnswer` over this same websocket; the backend
+// computes and applies the AI's move. Manual override always works: the creator
+// clicking a normal choice for an AI seat (solo mode lets one tab answer any
+// seat) just resolves it via the existing `choose` path.
+
+// Setup/lobby questions the AI must never touch (it has no decision model for
+// these). Tags are read after unwrapping QuestionLabel/PayCostQuestion/QuestionWithSource.
+const AI_SETUP_DENYLIST = new Set<string>([
+  'ChooseDeck',
+  'ChooseUpgradeDeck',
+  'PickScenarioSettings',
+  'PickCampaignSettings',
+  'PickCampaignSpecific',
+  'PickScenarioSpecific',
+  'ContinueCampaign',
+  'PickDestiny',
+])
+
+// Pending scheduled sends, keyed by playerId; tracks the questionVersion the send
+// was armed for so a question change cancels/reschedules instead of firing stale.
+const aiScheduled = new Map<string, { version: number; timer: ReturnType<typeof setTimeout> }>()
+// The (playerId -> questionVersion) we last actually sent an AiAnswer for. Drives
+// the loop-guard: if the same (seat, version) is still pending after our send, the
+// AI couldn't resolve it, so we stop and hand it to the human.
+const aiSentVersion = new Map<string, number>()
+// Reactive set of AI seats currently "stuck" (handed back to the human creator).
+const aiStuckSeats = ref<Set<string>>(new Set())
+
+// All configured AI seats (used to mount the dev panel); the driver further
+// filters to enabled seats.
+const aiSeatIds = computed(() =>
+  game.value ? Object.keys(game.value.settings.aiPlayers) : [],
+)
+
+function innerQuestionTag(q: Question | undefined): string | null {
+  let cur: Question | undefined = q
+  while (
+    cur &&
+    (cur.tag === 'QuestionLabel' || cur.tag === 'PayCostQuestion' || cur.tag === 'QuestionWithSource')
+  ) {
+    cur = 'question' in cur ? cur.question : undefined
+  }
+  return cur ? cur.tag : null
+}
+
+function enabledAiSeats(g: Arkham.Game): string[] {
+  const seats = g.settings.aiPlayers
+  return Object.keys(seats).filter((pid) => seats[pid]?.aiEnabled)
+}
+
+// The investigator id seated at an AI playerId (AI seats map to an investigator
+// via investigator.playerId), or null if that seat isn't seated yet.
+function aiSeatInvestigatorId(g: Arkham.Game, pid: string): string | null {
+  for (const investigator of Object.values(g.investigators)) {
+    if (investigator.playerId === pid) return investigator.id
+  }
+  return null
+}
+
+// A skill-test ASSIST commit window for an AI seat: there is an active skill
+// test, the seat has a parked question, and the seat is NOT the performer (the
+// performer's own AI commit window is driven normally by the backend). The
+// backend's AiAnswer driver loops on these assist windows, so we leave them
+// parked and surface the dev "Request assist" button instead (AiControlPanel).
+function isAiAssistWindow(g: Arkham.Game, pid: string): boolean {
+  if (!g.skillTest) return false
+  if (!(pid in g.question)) return false
+  const invId = aiSeatInvestigatorId(g, pid)
+  return invId !== null && invId !== g.skillTest.investigator
+}
+
+function cancelAiTimer(pid: string) {
+  const sched = aiScheduled.get(pid)
+  if (sched) {
+    clearTimeout(sched.timer)
+    aiScheduled.delete(pid)
+  }
+}
+
+function cancelAllAiTimers() {
+  for (const { timer } of aiScheduled.values()) clearTimeout(timer)
+  aiScheduled.clear()
+}
+
+function setAiStuck(pid: string, stuck: boolean) {
+  if (stuck === aiStuckSeats.value.has(pid)) return
+  const next = new Set(aiStuckSeats.value)
+  if (stuck) next.add(pid)
+  else next.delete(pid)
+  aiStuckSeats.value = next
+}
+
+function driveAi() {
+  // Flag off (or spectating): stand down and clear any armed sends.
+  if (!aiDevEnabled.value || props.spectate) {
+    cancelAllAiTimers()
+    return
+  }
+  const g = game.value
+  if (!g) {
+    cancelAllAiTimers()
+    return
+  }
+
+  // Master kill-switch off, or not in active play (setup/lobby/over): stand down.
+  if (!ai.enabled || g.gameState.tag !== 'IsActive') {
+    cancelAllAiTimers()
+    return
+  }
+
+  const seats = enabledAiSeats(g)
+  if (seats.length === 0) {
+    cancelAllAiTimers()
+    return
+  }
+
+  const version = g.scenarioSteps
+
+  // Drop scheduled sends for seats no longer pending / no longer AI-enabled.
+  for (const pid of [...aiScheduled.keys()]) {
+    if (!(pid in g.question) || !seats.includes(pid)) cancelAiTimer(pid)
+  }
+  // Clear stale stuck flags once a seat's question clears or its version advances.
+  for (const pid of [...aiStuckSeats.value]) {
+    if (!(pid in g.question) || aiSentVersion.get(pid) !== version) setAiStuck(pid, false)
+  }
+
+  for (const pid of seats) {
+    const q = g.question[pid]
+    if (!q) continue
+
+    const tag = innerQuestionTag(q)
+    if (tag && AI_SETUP_DENYLIST.has(tag)) continue
+
+    // Skill-test ASSIST window: the backend AiAnswer driver loops on a teammate
+    // AI's commit window during another investigator's test. Never auto-answer
+    // it and never mark it "stuck" — leave it parked for the human / the dev
+    // "Request assist" button. Cancel any send already armed before the test.
+    if (isAiAssistWindow(g, pid)) {
+      cancelAiTimer(pid)
+      continue
+    }
+
+    // Loop-guard: we already auto-answered this exact (seat, version) and it is
+    // STILL pending -> the AI couldn't resolve this question shape. Mark the seat
+    // stuck and stop auto-answering it; the human creator answers it manually.
+    // Normal auto-answering resumes once the version advances.
+    if (aiSentVersion.get(pid) === version) {
+      setAiStuck(pid, true)
+      cancelAiTimer(pid)
+      continue
+    }
+    setAiStuck(pid, false)
+
+    const existing = aiScheduled.get(pid)
+    if (existing) {
+      if (existing.version === version) continue // already armed for this version
+      cancelAiTimer(pid) // version moved on -> reschedule against the current one
+    }
+
+    const delay = g.settings.aiPlayers[pid]?.aiResponseDelayMs ?? 1500
+    const timer = setTimeout(() => {
+      aiScheduled.delete(pid)
+      const cur = game.value
+      // Re-validate at fire time so a question change/clear, a state change, a
+      // disabled seat, or a paused master switch cancels the stale send.
+      if (!cur || !ai.enabled || props.spectate) return
+      if (cur.gameState.tag !== 'IsActive') return
+      if (cur.scenarioSteps !== version) return
+      if (!(pid in cur.question)) return
+      if (!enabledAiSeats(cur).includes(pid)) return
+      // A skill test that opened after this send was armed turns the seat's
+      // question into an assist window; don't fire AiAnswer into it (it loops).
+      if (isAiAssistWindow(cur, pid)) return
+      aiSentVersion.set(pid, version)
+      send(JSON.stringify({ tag: 'AiAnswer', playerId: pid }))
+    }, Math.max(0, delay))
+    aiScheduled.set(pid, { version, timer })
+  }
+}
+
+// Re-evaluate whenever the game updates (every server push reassigns game.value)
+// and whenever the client master switch flips.
+watch(game, () => driveAi())
+watch(() => ai.enabled, () => driveAi())
+// Toggling the dev "AI Investigators" flag mid-session stands the driver down /
+// brings it back up immediately (the AiControlPanel mount is reactive on its own).
+watch(aiDevEnabled, () => driveAi())
 const handleResult = (result: ServerResult) => {
   processing.value = false
   switch (result.tag) {
@@ -686,6 +923,12 @@ const handleResult = (result: ServerResult) => {
           console.error(e)
           uiLock.value = false
         })
+      return
+    case 'SharedStateUpdate':
+      // "Epic Multiplayer" shared-state feed riding on this group's game ws.
+      // Forward it to the event store so the organizer bar's shared counters stay
+      // live; harmless no-op for ordinary games that never receive this tag.
+      eventStore.applySharedState(result.contents)
       return
     case 'GameUpdate':
       // Flush the latest state onto the board even while a revelation/modal holds
@@ -1339,6 +1582,7 @@ onUnmounted(() => {
   focusLightObserver = null
   if (focusLightAnimationFrame !== null) cancelAnimationFrame(focusLightAnimationFrame)
   window.removeEventListener('arkham-setting-change', handleSettingChange)
+  cancelAllAiTimers()
   delete (window as any).sendDebug
   delete (window as any).undo
   delete (window as any).debugChoose
@@ -1357,6 +1601,11 @@ onUnmounted(() => {
     </div>
   </div>
   <div id="game" v-else-if="ready && game && playerId">
+    <AiControlPanel
+      v-if="aiDevEnabled && game && aiSeatIds.length > 0"
+      :game="game"
+      :stuck-seats="aiStuckSeats"
+    />
     <dialog v-if="error" class="error-dialog">
       <h2>{{ $t('error') }}</h2>
       <p class="error-message">{{ error }}</p>
@@ -1659,6 +1908,12 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
+    <OrganizerBar
+      v-if="organizerEventId"
+      :event-id="organizerEventId"
+      :current-game-id="gameId"
+      :spectate="spectate"
+    />
     <MultiplayerLobby
       v-if="game.gameState.tag === 'IsPending'"
       :game-id="gameId"

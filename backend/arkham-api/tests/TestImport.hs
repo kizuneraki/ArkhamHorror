@@ -71,6 +71,7 @@ import Arkham.Enemy.Cards qualified as Cards
 import Arkham.Enemy.Types
 import Arkham.Entities qualified as Entities
 import Arkham.Event.Types
+import Arkham.Epic.Types (HasMaybeEpic (..))
 import Arkham.Game qualified as Game
 import Arkham.Game.Settings
 import Arkham.Game.State
@@ -256,6 +257,9 @@ instance CardGen TestAppT where
 
 runTestApp :: TestApp -> TestAppT a -> IO a
 runTestApp testApp = flip evalStateT testApp . unTestAppT
+
+instance HasMaybeEpic TestApp where
+  getMaybeEpicEnv _ = Nothing
 
 instance HasGameRef TestApp where
   gameRefL = lens game $ \m x -> m {game = x}
@@ -874,6 +878,9 @@ newGame scenario' investigator = do
       Game
         { gameWindowDepth = 0
         , gameWindowStack = Nothing
+        , gameWindowTick = 0
+        , gameWindowTickStack = []
+        , gameEntryTicks = mempty
         , gameRunWindows = True
         , gameDepthLock = 0
         , gamePhaseHistory = mempty
