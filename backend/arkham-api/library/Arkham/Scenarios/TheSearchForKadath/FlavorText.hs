@@ -7,254 +7,234 @@ intro1 :: FlavorText
 intro1 =
   FlavorText
     (Just "Intro 1")
-    [ BasicEntry "You stay the night at Einar’s Place. Your rest is anything but peaceful.\
-      \ Even if one could sleep within a dream, you certainly do not. Your mind\
-      \ teems with anxiety over the quest looming ahead. You reflect on the black\
-      \ cat’s warning about danger in the waking world, and you wonder about the\
-      \ others who have followed Virgil Gray down the steps of slumber and through\
-      \ the Enchanted Woods. Are they here now, too? Perhaps if you find this\
-      \ castle and return with proof of the Dreamlands, you can save everyone:\
-      \ yourself, your friends, and the other dreamers as well."
+    [ BasicEntry "这晚你在艾纳酒馆住下，但你完全没得到好好的休息。\
+      \就算有人能在梦中睡着，那也绝对不是你。\
+      \你对前方的探索充满了焦虑。\
+      \你回想着黑猫关于清醒世界存在危险的提醒，你还想知道其他入梦者的情况，他们跟随着维吉尔·格雷走下睡眠的阶梯，穿过了被施魔法的森林。\
+      \他们现在也在这个世界吗？\
+      \或许你找到那座城堡，把幻梦境存在的证据带回去，就能拯救所有人：\
+      \你自己、你的朋友们，还有其他入梦者。"
     ]
 
 intro2 :: FlavorText
 intro2 =
   FlavorText
     (Just "Intro 2")
-    [ BasicEntry "When day breaks and light peeks through the curtains of your room, you\
-      \ notice a cat-shaped silhouette sitting in front of the window. As your\
-      \ vision adjusts, you are transfixed by its piercing yellow eyes, bright as\
-      \ the dawn light. You recognize the shape as Virgil’s talking cat. You ask\
-      \ the black cat how long it has been sitting there."
-    , BasicEntry "“Long enough to know you are neither waking nor asleep,” it replies\
-      \ paradoxically."
-    , BasicEntry "The nature of this world still confounds you. Can one even sleep in the\
-      \ Dreamlands? If so, where would their minds go? Curious, you pose this\
-      \ question to the cat."
-    , BasicEntry "“Those here in their physical bodies can, but you are something else\
-      \ entirely. Now, never mind all that. On to business.” The black cat leaps\
-      \ onto your bed. “I gave your friends the warning you wanted me to pass\
-      \ along. They are preparing to enter the Dreamlands as well, it seems. In the\
-      \ meantime, I will stay with you. Somebody has to watch over you and my pet\
-      \ human, anyway.”"
+    [ BasicEntry "当清晨的第一缕阳光穿过你房间的窗帘，你隐约看见窗前有一只猫的影子。\
+      \你揉揉眼睛，定定地看着它那双锐利的、像晨光一般明亮的黄色猫眼，移不开视线。\
+      \你想起来这是维吉尔那只会说话的猫。\
+      \你问它在这儿坐了多久，它回答道：."
+    , BasicEntry "“久到能知道你现在没睡着也没睡醒。”\
+      \它所说的话有些自相矛盾。"
+    , BasicEntry "你仍对这个世界感到困惑。\
+      \有人在幻梦境睡着过吗？\
+      \如果有的话，他们的意识会到哪去？你好奇地向黑猫提出这个问题。"
+    , BasicEntry "“带着肉体来的人才能入睡，而你完全不是。现在别想那些了，来说正事。”\
+      \黑猫跳到你的床上，“我把你的口信带给了你的朋友们，提醒了他们。\
+      \似乎他们现在也准备进入幻梦境。\
+      \在这期间，我会待在你身边。\
+      \毕竟总得有人照看你和我的宠物人类。”"
     ]
 
 intro3 :: FlavorText
 intro3 =
   FlavorText
     (Just "Intro 3")
-    [ BasicEntry "In the morning, you find Virgil and Randolph talking in the town square\
-      \ outside of Einar’s Place. You still aren’t quite sure what to think of\
-      \ either of them, but you have a good sense of where you should go next.\
-      \ After all, this is not your first excursion into the fabled land of dreams.\
-      \ Addressing Randolph, you suggest talking to the high priest Atal in the\
-      \ nearby Temple of the Elder Ones. It is a name you heard the last time you\
-      \ visited the city of Ulthar in your sleep, though until now you had no\
-      \ reason to seek the priest’s advice. Randolph gives you a startled glance\
-      \ that transforms quickly into a smirk."
-    , BasicEntry "“How curious,” he says, “I was about to suggest the same. Atal is wise\
-      \ beyond all our measure. He may know where to find the place we seek.”"
-    , BasicEntry "Virgil, eager to embark on this adventure, claps his hands. “Well, what\
-      \ are we waiting for? This way, my friends!”"
-    , BasicEntry "You nod and head for the temple, a circular tower of ivoried stone\
-      \ crowning the highest hill in town. A small army of cats patrols its walls.\
-      \ The cat at the head of the formation is none other than the old cat with\
-      \ the scar you encountered in the woods earlier. He steps forward to bar your\
-      \ entry and regards your party with great acrimony."
-    , BasicEntry "“Hello again,” the old cat says with a sharp tone. “I suppose yeh want\
-      \ me to step aside.”"
+    [ BasicEntry "早上，你看到维吉尔和伦道夫在艾纳酒馆外面的城镇广场聊天。\
+      \你仍然不确定该如何看待他们二人，但你清楚自己接下来要去哪里。\
+      \毕竟，这不是你第一次进入这传说中的梦之国度。\
+      \你对伦道夫说，建议到附近那座供奉旧神的庙宇去，找阿塔尔大牧师谈谈。\
+      \这名字是你上次在梦中造访乌撒之城所听到的，但在这之前，你都没有理由去寻求牧师的建议。\
+      \伦道夫惊讶地看了你一眼，然后很快就咧嘴笑了起来："
+    , BasicEntry "“真奇怪。”他说，“我刚要说这名字。\
+      \阿塔尔的智慧非我们所能估量。他或许知道我们要找的地方在哪儿。”"
+    , BasicEntry "渴望踏上这场探索的维吉尔拍手叫好。\
+      \“那我们还在等什么？朋友们，这边走！”"
+    , BasicEntry "你点点头，并朝城里最高的山上的神庙走去，那是一座圆形的象牙石塔。\
+      \一小群猫咪在神庙的墙上巡逻。\
+      \为首的猫咪正是你在树林里遇到的那只带伤疤的老猫。\
+      \它上前阻止你进入神庙，并对你们一行人讥讽道："
+    , BasicEntry "“又见面了。”\
+      \老猫尖声说道，“我猜汝等想叫我行个方便。”"
     ]
 
 intro4 :: FlavorText
 intro4 =
   FlavorText
     (Just "Intro 4")
-    [ BasicEntry "The next morning, you find Virgil and Randolph talking in the town\
-      \ square outside of Einar’s Place. Though you aren’t quite sure what to think\
-      \ of either of them just yet, you know that both of them are well versed in\
-      \ the lay of this strange land. You ask them about your next move. “We should\
-      \ speak to the high priest Atal in the Temple of the Elder Ones,” Randolph\
-      \ suggests. “He is wise beyond all our measure and may know where to find the\
-      \ place we seek.” You wonder aloud how far the temple is from here."
-    , BasicEntry "“Not far at all,” Randolph replies. “It stands atop the highest hill\
-      \ within Ulthar. Come, I will lead the way.” With Randolph taking the lead,\
-      \ you make your way to the Temple of the Elder Ones, a circular tower of\
-      \ ivoried stone protected by a small army of cats. The cat at the head of the\
-      \ formation is none other than the old cat with the scar you encountered in\
-      \ the woods earlier. He steps forward to bar your entry and regards your\
-      \ party with great acrimony."
-    , BasicEntry "“Hello again,” the old cat says with a sharp tone. “I suppose yeh want\
-      \ me to step aside.”"
+    [ BasicEntry "第二天早上，你看到维吉尔和伦道夫在艾纳酒馆外面的城镇广场聊天。\
+      \虽然你还不清楚他们是什么样的人，你只知道他们都很熟悉这片在你看来还很陌生的地方。\
+      \你问他们下一步该怎么做。\
+      \“我们该到那座供奉旧神的庙宇去，找阿塔尔大牧师谈谈。”\
+      \伦道夫提议道，“他的智慧非你我所能估量，他或许知道我们要找的地方在哪儿。”\
+      \你好奇神庙离这儿有多远，直接开口发问。"
+    , BasicEntry "“一点也不远。”\
+      \伦道夫回答说，“它就在乌撒之城最高的山上。来吧，我来带路。”\
+      \伦道夫带着你来到一座圆形的象牙石塔前，这里就是旧神的庙宇，而且有一小群猫咪拦在你们面前。\
+      \为首的猫咪正是你在树林里遇到的那只带伤疤的老猫。\
+      \它上前阻止你进入神庙，并对你们一行人讥讽道："
+    , BasicEntry "“又见面了。”\
+      \老猫尖声说道，“我猜汝等想叫我行个方便。”"
     ]
 
 intro5 :: FlavorText
 intro5 =
   FlavorText
     (Just "Intro 5")
-    [ BasicEntry "“Well, too bad,” the cat says, tail stiff and straight. More cats flank\
-      \ you from the sides, several hissing loudly. Their fur puffs up, and their\
-      \ eyes flare with anger. “It’s our duty to guard this place from impetuous\
-      \ outsiders like yerself. Yeh ain’t wanted here.”"
-    , BasicEntry "“Be reasonable,” Randolph implores. “We are only trying to speak with\
-      \ Atal. We mean no harm.”"
-    , BasicEntry "“Yeh can mean one thing and do another.” The scarred cat paces. “Now get\
-      \ outta here and don’t come back.”"
+    [ BasicEntry "“不过，很遗憾。”\
+      \老猫说着，尾巴高高竖起。\
+      \其他猫咪从侧面把你们围住，其中几只还大声地咆哮。\
+      \它们毛发竖起，眼露凶光。“我们的使命就是保护这个地方，不让汝等鲁莽的外乡人进入。这里不欢迎汝等。”"
+    , BasicEntry "“通融一下吧。”\
+      \伦道夫恳求道，“我们只想跟阿塔尔谈谈。我们没有恶意。”"
+    , BasicEntry "“汝等大可说一套，做一套。”\
+      \伤疤老猫踱着步说道，“马上离开这儿，别再回来。”"
     ]
 
 intro6 :: FlavorText
 intro6 =
   FlavorText
     (Just "Intro 6")
-    [ BasicEntry "You tell the cat that you are merely here to speak with Atal, and that\
-      \ you mean no harm. “Ah, no worries, human,” the cat says with a gaping\
-      \ yawn—the kind only a cat can perform and still look regal in the act. “You\
-      \ don’t seem the type to make trouble. ’Sides, I ain’t goin’ nowhere.” You\
-      \ see a small lump in front of the cat: a bloodied, half-eaten pheasant. You\
-      \ resist the urge to turn up your nose and count yourself lucky you are on\
-      \ this cat’s good side. “Go on in,” he says, then licks his chops as he\
-      \ prepares to finish his meal."
+    [ BasicEntry "你告诉老猫，你到这只想跟阿塔尔谈谈，并没有任何恶意。\
+      \“啊，别担心，人类。”猫打着哈欠说道——这个动作只有猫才能做到，并且这么做的时候依然看起来十分高贵。\
+      \“你看起来不像是会惹麻烦的类型。况且，这里还有我镇守呢。”\
+      \你看到猫的面前有一小块东西，那是被吃了一半的血淋淋的野鸡。\
+      \你强忍着露出厌恶表情的冲动，庆幸自己与这只猫处好了关系。\
+      \“进去吧。”它说完舔舔嘴巴，准备吃完这顿美餐。"
     ]
 
 intro7 :: FlavorText
 intro7 =
   FlavorText
     (Just "Intro 7")
-    [ BasicEntry "Resigned, you leave the temple on the hilltop behind. “I suppose we\
-      \ shall have to make do without Atal’s wisdom,” Randolph says with a sigh.\
-      \ “In any event, it is likely our destination is far from here—perhaps on\
-      \ another continent altogether. We will need to secure passage by sea. I\
-      \ suggest we travel south, to the port city of Dylath-Leen. We can figure out\
-      \ our next step from there.” You nod and take one last look at the stone\
-      \ temple, wondering at the knowledge you may have left behind."
+    [ BasicEntry "你们放弃之后，离开了这座山顶上的神庙。\
+      \“我想，没有阿塔尔的智慧，我们只能将就着往下调查了。”\
+      \伦道夫说着叹口气，“无论如何，我们的目的地可能离这里很远——或许完全在另一块大陆上。\
+      \我们走海路可以确保通畅。\
+      \我提议，我们往南边去，到狄拉斯-利恩港口城。在那里我们再思考下一步该怎么做。”\
+      \你点头，然后最后看了一眼那座石塔神庙，好奇你遗漏了什么信息。"
     ]
 
 intro8 :: FlavorText
 intro8 =
   FlavorText
     (Just "Intro 8")
-    [ BasicEntry "You inform the cat you are entering the temple one way or another, and\
-      \ that a simple cat will not stand in your way. “Wanna bet?” he growls,\
-      \ lowering his body and preparing to pounce. Noticing the commotion, several\
-      \ cats guarding the temple surround you. You don’t wish to harm these cats,\
-      \ but you won’t let them block you from your objective, either. Nodding to\
-      \ your companions, you make a mad dash for the temple gates. A storm of\
-      \ hisses and angry screeches erupts all around you as the cats mount a\
-      \ desperate defense. A wall of tiny claws and teeth meets you, but you push\
-      \ through, defiant. You slam the stone door shut behind you and hear the old\
-      \ cat yelling from the other side: “Fine then, human! See your priest! But do\
-      \ not think this transgression will be forgiven!”"
+    [ BasicEntry "你告诉老猫，你无论如何都要进神庙，区区一只猫拦不住你。\
+      \“你想跟我打个赌吗？”\
+      \他咆哮道，伏下身子，准备猛扑。\
+      \还有几只猫注意到这一幕，包围了你。\
+      \你不想伤害这些猫，但你也不会让它们阻拦你。\
+      \你向同伴点点头，然后迅速冲向神庙大门。\
+      \你的四面八方爆发出如同狂风一般的咆哮声和愤怒的尖叫声，猫群不顾一切地阻拦你。\
+      \无数的小爪子和尖牙在面前阻拦着你，但你无所畏惧地强行穿过。\
+      \你砰地一声关上身后的石门，听见老猫在门的另一边大叫：\
+      \“好啊，人类！见你的牧师去吧！但你别以为刚才你犯的罪行能得到宽恕！”"
     ]
 
 intro9 :: FlavorText
 intro9 =
   FlavorText
     (Just "Intro 9")
-    [ BasicEntry "At the top of the temple, seated on an ivory dais, the high priest Atal\
-      \ awaits you. He is a frail, wiry man with a long, wispy black beard,\
-      \ caved-in cheeks, and the pale, milky eyes of one afflicted by blindness.\
-      \ “Do not let your eyes deceive you,” Randolph whispers as you seat\
-      \ yourselves in front of the dais. “Atal is over three centuries old, but his\
-      \ memory is sharp as a tack.”"
-    , BasicEntry "You ask the priest about your quest and about your destination: the\
-      \ castle Randolph described from his dreams. “You speak of the resting place\
-      \ of the Great Ones, high above unknown Kadath. Even I know not its true\
-      \ location. And that is all well and good, for the fruits of attempting to\
-      \ ascend to such a place would be bitter indeed. My companion Barzai once\
-      \ scaled a peak only a fraction as sacred, and he was never seen nor heard\
-      \ from again. The gods of Kadath may seem powerless, but they are protected\
-      \ by the Other Gods from the Outside, whom it is better not to discuss. It\
-      \ would be wiser to let all the gods alone and leave this folly behind.”"
-    , BasicEntry "Atal’s use of the word “gods” has you curious. You wonder aloud what\
-      \ kind of god might exist in a place like this."
-    , BasicEntry "The priest shakes his head. “They are not our gods, but the gods of\
-      \ Earth, for this land is but a reflection of yours.”"
-    , BasicEntry "You attempt to pry deeper into Atal’s wisdom with your questioning, but\
-      \ his advice does not budge. “I have already said more than I should,” he\
-      \ insists. “Please, for your sake, pursue this madness no further.”"
+    [ BasicEntry "在神庙顶端，牧师阿塔尔坐在一个象牙讲台上，正等着你。\
+      \他是个瘦而结实的男子，留着纤细的黑胡子，双颊凹陷，双眼因失明变成了乳白色。\
+      \“不要被你的眼睛所欺骗。”\
+      \你们坐在讲台前时，伦道夫低声对你说，“阿塔尔超过三百岁，但他的记忆力非常敏锐。”"
+    , BasicEntry "你向牧师询问关于你们的任务和目的地：伦道夫所说的他梦中的那座城堡。\
+      \“你所说的是梦境诸神的歇息地，就在未知的卡达斯上方高空。\
+      \即便是我，也不知道它确切的位置。\
+      \不知道也好，因为试图到那个地方去的后果会很痛苦。\
+      \我的同伴巴尔塞曾经登上一座有些神圣的山峰，从此杳无音讯。\
+      \卡达斯的神明看似没有任何力量，但它们受外神保护，而最好不要议论外神。\
+      \不去管那些神明，不去管这件蠢事比较好。”"
+    , BasicEntry "阿塔尔提到的“神”使你感到好奇。\
+      \你问什么样的神会在这样的地方。"
+    , BasicEntry "牧师摇摇头：\
+      \“它们不是我们的神，而是地球诸神，因为这个地方不过是你们世界的倒影。”"
+    , BasicEntry "你试图透过提问来从阿塔尔那里探究更多知识，但他依然重复之前那番话。\
+      \“我连不该说的都告诉你们了。”\
+      \他坚持道，“为了你们自己，请别再追寻疯狂了。”"
     ]
 
 intro10 :: FlavorText
 intro10 =
   FlavorText
     (Just "Intro 10")
-    [ BasicEntry "A flash of inspiration strikes you, and you remember the moon-wine given\
-      \ to you by the Zoogs in the Enchanted Woods. You offer some to Atal, and he\
-      \ accepts graciously. You pretend to partake of the wine yourself while\
-      \ offering draught after draught to the priest. Eventually, Atal’s lips\
-      \ loosen, and he speaks of forbidden things he would never discuss were it\
-      \ not for the wine. He tells of an image carved into the face of the mountain\
-      \ Ngranek on the isle of Oriab—the likeness of the gods, or so he claims. He\
-      \ tells of the pillars of Kadatheron wherein the history of Earth’s\
-      \ Dreamlands is recorded. He tells of those slain by the hordes of Night\
-      \ itself and interred in the crypts of Zulan-Thek, the city of the dead. He\
-      \ tells of a baleful star above a forgotten city that appears on no map. “If\
-      \ you absolutely must seek Kadath in the Cold Wastes,” he says drowsily,\
-      \ “there is a city along the coast to the south: Dylath-Leen. You may secure\
-      \ passage there.”"
+    [ BasicEntry "你突然灵光一闪，想起祖格鼠在魔幻森林里给你的月树酒。\
+      \你倒了一些给阿塔尔，他落落大方地接受了。\
+      \你给牧师一杯接一杯地倒酒，而你只是假装喝下。\
+      \最后，阿塔尔松了口，他说起一些酒后才能吐露的禁忌之言。\
+      \他说起奥瑞巴岛上的恩格拉尼克山脉，那里雕刻着一张面孔——是神的肖像，至少他是这么说的。\
+      \他还说到了卡达瑟隆的柱子，那里记录着地球幻梦境的历史。\
+      \他说到那些被夜色怪群屠杀，安葬在死亡之城祖兰提克的地穴的人。\
+      \他还说，有个不存在于地图上的、被遗忘的城市，那里上方有着一颗凶星。\
+      \“如果你一定要在冰封荒土中寻找卡达斯。”\
+      \他昏昏沉沉地说，“南边沿海地区有一座城市：狄拉斯-利恩。你可以在那找到入口。”"
     ]
 
 intro11 :: FlavorText
 intro11 =
   FlavorText
     (Just "Intro 11")
-    [ BasicEntry "Atal refuses to give you any more advice, so you decide to leave the\
-      \ temple on the hilltop behind. “We have learned much, but we are still no\
-      \ closer to knowing the location of Kadath,” Randolph says with a sigh. “It\
-      \ is likely that our destination is far from here—perhaps on another\
-      \ continent altogether. We shall need to secure passage by sea if we are to\
-      \ travel such great distances. I suggest we begin by traveling south, to the\
-      \ port city of Dylath-Leen. We can figure out our next step from there.”"
+    [ BasicEntry "阿塔尔拒绝再给你指示，所以你决定离开这座山顶上的神庙。\
+      \“我们得到了很多信息，但我们还是不知道卡达斯的位置。”\
+      \伦道夫叹气并说道，“我们的目的地可能离这里很远——或许完全在另一块大陆上。\
+      \路途遥远，走海路是最通畅的方式。我提议我们先往南边去，到狄拉斯-利恩港口城。\
+      \在那里我们再思考下一步该怎么做。”"
     ]
 
 investigatorDefeat :: FlavorText
 investigatorDefeat =
   FlavorText
     (Just "Investigator Defeat")
-    [ BasicEntry "You wake to find yourself restrained by thick cords of hempen rope,\
-      \ lying on top of hard, moist wood. The floor rocks steadily back and forth,\
-      \ and you hear ocean waves crashing against the walls. You are captive aboard\
-      \ some kind of galley. But why?"
+    [ BasicEntry "你醒来时发现自己躺在坚硬而潮湿的木板上，被粗麻绳捆着。\
+      \地面稳定地前后晃动，你可以听到海浪冲击墙壁的声音。\
+      \你被抓到了某艘船上。\
+      \但为什么会抓你呢？"
+    , ListEntry [ ListItemEntry (BasicEntry "在剧本日志中，每位被击败的调查员记录（你调查员的名字）被俘。") []]
+    , ListEntry [ ListItemEntry (BasicEntry "如果被击败的调查员的牌库包含伦道夫·卡特，并且至少有1位调查员撤退，则撤退的1位调查员获得伦道夫·卡特的所有权。") []]
+    , ListEntry [ ListItemEntry (BasicEntry "如果未达成任何结局，且至少一位调查员撤退，阅读_结局1_") []]
+    , ListEntry [ ListItemEntry (BasicEntry "如果未达成任何结局，且所有调查员被击败，阅读_结局2_") []]
+    , ListEntry [ ListItemEntry (BasicEntry "如果结局1已达成，阅读_结局1_") []]
     ]
 
 resolution1 :: FlavorText
 resolution1 =
   FlavorText
     (Just "Resolution 1")
-    [ BasicEntry "You have ventured far and wide, from the quaint cobbled villages of the\
-      \ kingdom of the Skai to wondrous lands you could have never in a hundred\
-      \ years imagined. You learned much of the Dreamlands and of the gods who\
-      \ dwell atop unknown Kadath. Though you are closer to your goal, you still\
-      \ don’t know its precise location. In the meantime, your quest grows deadlier\
-      \ with each passing day. No matter where you go, foul, nightmarish creatures\
-      \ pursue you across land and sea. Winged beasts with no faces, horned\
-      \ Corsairs wielding razor-sharp cutlasses and commanding great black\
-      \ galleys—the agents of your demise bear many shapes. You decide to return to\
-      \ your ship, safe from the many dangers of the Dreamlands...or so you\
-      \ thought. Unfortunately, your ship is no safe haven. When you return, the\
-      \ crew and captain are nowhere to be found. There are no signs of struggle,\
-      \ but Virgil, who returned to the ship earlier to prepare for your next\
-      \ departure, is also missing."
-    , BasicEntry "“I fear the worst,” Randolph mourns. “If those fiendish Corsairs\
-      \ captured them, they are in dire trouble. They are agents of the Other Gods\
-      \ from the Outside, whose soul and messenger is the crawling chaos\
-      \ _Nyarlathotep_.” The mere utterance of the name causes you to shudder, though\
-      \ you do not know why. You ask where they might have been taken. As if\
-      \ discussing any other port of call, he replies: “The beasts who command\
-      \ their black galleys sail from the Moon. If we are to rescue Virgil and our\
-      \ other companions, that is where we must go.”"
+    [ BasicEntry "你的冒险已经来到了非常遥远的地方，从斯凯王国古雅的鹅卵石村庄，到你毕生也无法想象的惊奇大陆。\
+      \你知道了关于幻梦境的许多信息，以及居住在未知的卡达斯上方的神明。\
+      \尽管你接近了自己的目标，但你依然不知道它具体的位置。\
+      \与此同时，你的冒险之旅每过一天，都变得更加危险。\
+      \无论你去到哪里，令人作呕的噩梦般的生物都在追着你，跨越山海。\
+      \长有翅膀的无面野兽追猎着你，还有挥舞着锋利短剑的长角海盗，开着巨大的黑色海盗船在海上紧追着你——你的死神真是千变万化。\
+      \你决定回到自己的船上，躲避幻梦境的危机……至少你是这么想的。\
+      \但很遗憾，你的船上并不安全。\
+      \你回到船上时，船员和船长已不见踪影。\
+      \现场没有挣扎的痕迹，但较早回到船上为下次航程做准备的维吉尔也不见了。"
+    , BasicEntry "“恐怕他们已经……”伦道夫为他们哀悼，“如果那些邪恶的海盗抓了他们，那他们凶多吉少。\
+      \那些海盗是外神的使徒，其真身与信使是蠕行混沌——_奈亚拉托提普_。”\
+      \你一听到这个名字就莫名地发抖。\
+      \你问他们可能会被带到什么地方去。\
+      \他就像讨论寻常海港一样回答你：\
+      \“那群海盗的海船是从月球启航的。如果我们想救回维吉尔和其他同伴，那我们必须到那儿去。”"
+    , ListEntry [ ListItemEntry (BasicEntry "每位调查员取得经验值，数量等于胜利区所有卡牌的胜利X数值之和。") []]
+    , ListEntry [ ListItemEntry (BasicEntry "本场冒险中调查员每发现1个神迹，在剧本日志中，“卡达斯的证据”旁边作1次记录。") []]
+    , ListEntry [ ListItemEntry (BasicEntry "在剧本日志中，记录维吉尔被俘。") []]
+    , ListEntry [ ListItemEntry (BasicEntry "在剧本日志中，记录伦道夫未遭俘虏。") []]
     ]
 
 resolution2 :: FlavorText
 resolution2 =
   FlavorText
     (Just "Resolution 2")
-    [ BasicEntry "As you examine your surroundings, you notice that your other companions,\
-      \ including Virgil and Randolph, have been captured as well. They are\
-      \ unconscious at the moment, but maybe when they awaken you can formulate a\
-      \ plan to free yourselves. After all, despite this setback, you have learned\
-      \ much of the Dreamlands and of the gods who dwell atop unknown Kadath.\
-      \ Though you still don’t know its precise location, if you are able to escape\
-      \ from this wretched galley, perhaps there is hope for your quest. You\
-      \ swallow a ball of despair and hope that this is not the end of your\
-      \ journey..."
+    [ BasicEntry "你查看周遭时，发现包括维吉尔和伦道夫在内的其他同伴也被抓来了。\
+      \他们此时都已昏迷，或许等他们醒来，你们可以一起想出自救的对策。\
+      \尽管遭受了挫折，但你们已经知道了关于幻梦境的许多信息，以及居住在未知的卡达斯上方的神明。\
+      \但你仍然不知道卡达斯具体的位置，如果你能从这艘可恶的海盗船逃出去，或许就能找到此行的希望。\
+      \你强忍着内心的绝望，祈望你的旅程不会到此为止……"
+    , ListEntry [ ListItemEntry (BasicEntry "查找你的牌库，找出一张{guardian}卡牌并将其打出（支付其费用）。") []]
+    , ListEntry [ ListItemEntry (BasicEntry "每位调查员取得经验值，数量等于胜利区所有卡牌的胜利X数值之和。") []]
+    , ListEntry [ ListItemEntry (BasicEntry "本场冒险中调查员每发现1个神迹，在剧本日志中，“卡达斯的证据”旁边作1次记录。") []]
+    , ListEntry [ ListItemEntry (BasicEntry "在剧本日志中，记录维吉尔被俘。") []]
+    , ListEntry [ ListItemEntry (BasicEntry "在剧本日志中，记录伦道夫被俘。") []]
     ]
