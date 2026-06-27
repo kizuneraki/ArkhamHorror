@@ -26,6 +26,7 @@ seekerDream =
       \不知道为什么，尽管你知道现在是学期末，但你连这门课叫什么、教过些什么都忘得一干二净。\
       \不知道为什么，尽管你知道现在是学期末，但你连这门课叫什么、教过些什么都忘得一干二净。\
       \当你走到走廊尽头，教室大门不详地出现在你面前。"
+      , ListEntry [ ListItemEntry (BasicEntry "查找你的牌库，找出一张{seeker}卡牌并将其打出（支付其费用）。") []]
     ]
 
 rogueDream :: FlavorText
@@ -42,6 +43,7 @@ rogueDream =
       \牌上的图案变成了没有眼睛、长着许多嘴巴和触手的怪物形状。\
       \ “9♥-10♣-D♦-C♠-N{autoFail},”\
       \牌最终变成了这些模样。你震惊地被人带离赌桌，领出门外。"
+      , ListEntry [ ListItemEntry (BasicEntry "查找你的牌库，找出一张{rogue}卡牌并将其打出（支付其费用）。") []]
     ]
 
 mysticDream :: FlavorText
@@ -56,6 +58,7 @@ mysticDream =
       \你一看向美丽的树木，它们的叶子就开始凋零。\
       \原先的绿草已经发黄，干枯裂开。但你必须到森林另一头去，就算让整座森林都枯死也值得。\
       \你走出森林时，脚下的小径突然到了尽头，前面是一扇大红杉的树干雕成的精致木门。"
+      , ListEntry [ ListItemEntry (BasicEntry "查找你的牌库，找出一张{mystic}卡牌并将其打出（支付其费用）。") []]
     ]
 
 survivorDream :: FlavorText
@@ -69,6 +72,7 @@ survivorDream =
       \这种想法驱使你往前狂奔，跑得比以往都快。\
       \不能被它追上。不能被它吃了。\
       \突然，你发现了出路：一扇环绕着藤的坚固木门。"
+      , ListEntry [ ListItemEntry (BasicEntry "查找你的牌库，找出一张{survivor}卡牌并将其打出（支付其费用）。") []]
     ]
 
 criminalDream :: FlavorText
@@ -82,6 +86,7 @@ criminalDream =
       \你的自由、你的人生，你拥有的和你所爱的一切，都会被他们夺走。\
       \为什么呢？就因为你不愿遵守他们的规矩吗？他们怎能为所欲为？\
       \当你拐过一个街角，条子正要追上你时，你发现了一幢砖砌建筑的入口。"
+      , ListEntry [ ListItemEntry (BasicEntry "查找你的牌库，找出一张_罪犯_或_违法_卡牌并将其打出（支付其费用）。") []]
     ]
 
 drifterDream :: FlavorText
@@ -94,6 +99,7 @@ drifterDream =
       \和看起来的不同，这列火车里满是一派意想不到的奢华景象：\
       \墙上有波斯挂毯作为装饰，大理石台阶盘绕到令人目眩的高度，一盏水晶吊灯使整个车厢光彩夺目，金碧辉煌。\
       \吊灯下是一道华丽的门，门上一个个镀金的格子构成了林中之狐的图画。"
+      , ListEntry [ ListItemEntry (BasicEntry "你可以将你牌库里的一张基础弱点随机替换为另一张基础弱点。如果你这么做，选择承受1点精神创伤或肉体创伤。") []]
     ]
 
 hunterDream :: FlavorText
@@ -106,6 +112,7 @@ hunterDream =
       \但当你进入这个房间——它的巢穴，你只看到一面肮脏的破镜子，镜子里映照出你疲惫而苦恼的面容。\
       \那头怪物怎么不见了？\
       \你确定它逃到这里来了，但是……你转身回到入口，惊讶地发现了一扇没见过的门。"
+      , ListEntry [ ListItemEntry (BasicEntry "查找你的牌库，找出一张_武器_卡牌并将其打出（支付其费用）。") []]
     ]
 
 medicOrAssistantDream :: FlavorText
@@ -121,6 +128,7 @@ medicOrAssistantDream =
       \但当你打开棺材，里面并没有遗体，只有一条长长的石道，通往地下深处。\
       \突然其中一个吊唁者把你往前推了一把，你从棺材边上掉了进去，一边身子痛苦地着地，落到底下的坑洞。\
       \你站起身来，发现自己唯一的出路：通向别处的一条石拱道……"
+      , ListEntry [ ListItemEntry (BasicEntry "选择另一位调查员。该调查员本场冒险开始时拥有额外2资源和额外1张起始手牌。") []]
     ]
 
 miskatonicOrScholarDream :: FlavorText
@@ -136,6 +144,7 @@ miskatonicOrScholarDream =
       \在你周围，整座图书馆从地基烧了起来。\
       \就在火焰烧到你身上之前，一扇离开图书馆的门呼唤着你。\
       \不知为何，那扇门伫立在火海中却没有燃烧。"
+      , ListEntry [ ListItemEntry (BasicEntry "查找你的牌库，找出一张_书籍_卡牌并将其打出（支付其费用）。") []]
     ]
 
 veteranDream :: FlavorText
@@ -148,6 +157,7 @@ veteranDream =
       \你从战壕边缘向无人区望去，那是一片荒芜的废墟，满目疮痍，尸横遍野。\
       \在那儿你看到了一扇孤零零的木门，伫立在碎石与泥土之间。你知道，那是你唯一的出路。\
       \你紧紧握着自己的步枪，跳出战壕，迎着枪林弹雨，在被爆炸震撼的地面上奔跑。"
+      , ListEntry [ ListItemEntry (BasicEntry "查找你的牌库，找出总计最多2张_策略_和/或_供给_卡牌，本场冒险开始时将其作为你额外的起始手牌。") []]
     ]
 
 wayfarerDream :: FlavorText
@@ -162,6 +172,7 @@ wayfarerDream =
       \最后，你随着一小股泥流一同倾倒在石质地面上。\
       \你发现自己位于一间密室，奇怪的象形文字发出的黯淡蓝光照亮了这个房间。\
       \这些符号构成了一道图案复杂的金色大门：这道门通往的正是你一直寻找的地穴。"
+      , ListEntry [ ListItemEntry (BasicEntry "查找你的牌库，找出一张_旅人_或_遗物_卡牌并将其打出（支付其费用）。") []]
     ]
 
 neutralDream1 :: FlavorText
@@ -173,6 +184,7 @@ neutralDream1 =
       \你额上满是汗水。不管用什么姿势，你的床铺不是太冷就是太热，总也无法入眠。\
       \最后，徒劳的挣扎让你厌烦，你起身朝洗手池走去，想往脸上泼些水。\
       \这时你才意识到，房间的布局与之前不同——通往浴室的门变成了一扇由玛瑙和大理石制成的大门。"
+      , ListEntry [ ListItemEntry (BasicEntry "你本场冒险开始时拥有额外2资源。") []]
     ]
 
 neutralDream2 :: FlavorText
@@ -185,6 +197,7 @@ neutralDream2 =
       \事态逐渐激化，从残肢断臂时而砸落在天花板砰砰作响，演变成残缺的躯干如一股洪流，砸得天花板下垂变形。\
       \你穿梭在这漫天尸雨之中，往外跑去，本能地离开你双亲的这座房子。\
       \就在你听到房子在你身后倒塌时，你来到熟悉的老地方，推开上方堆积的坠落的肢体，发现一口地窖的风化木门，你松了口气。"
+      , ListEntry [ ListItemEntry (BasicEntry "你本场冒险开始时拥有额外1张起始手牌。") []]
     ]
 
 noResolution :: FlavorText
@@ -209,6 +222,7 @@ noResolution =
       \“它们是能干的帮手，但也是一种独立的生物，它们不需要你我。\
       \等我们到了乌撒，你还有机会遇到别的猫。\
       \但现在要解决当务之急。”你们一同离开了这片魔幻森林。"
+      
     ]
 
 resolution1 :: FlavorText
