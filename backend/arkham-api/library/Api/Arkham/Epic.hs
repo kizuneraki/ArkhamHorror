@@ -85,6 +85,47 @@ applyEpicDeltasLocked eid mGameId mGameStep deltas = do
         insert_ $ ArkhamEpicStep eid (baseStep + i) mGameId mGameStep d now
       pure s1
 
+-- | Apply a pure update to the event's shared state under a @FOR UPDATE@ lock and
+-- persist it, returning the new state. For barrier/timer BOOKKEEPING
+-- (groups-ready bitmask, timer-start) that is set directly rather than as an
+-- undoable additive delta — so it records no 'ArkhamEpicStep'. The update runs
+-- inside the lock, so concurrent callers see each other's writes (e.g. two groups
+-- marking ready at once can't lose a bit).
+modifySharedStateLocked
+  :: MonadIO m
+  => ArkhamEpicEventId
+  -> (SharedEventState -> SharedEventState)
+  -> ReaderT SqlBackend m SharedEventState
+modifySharedStateLocked eid f = fst <$> modifySharedStateLockedWith eid (\s -> (f s, ()))
+
+-- | 'modifySharedStateLocked' that also returns an extra value computed from the
+-- locked pre-update state — e.g. the act-advance coordinator decides INSIDE the
+-- lock whether this call actually consumed the pool (crossed the threshold) and
+-- returns that flag, so a concurrent second resolver (which sees the pool already
+-- reset) can be told it did NOT consume.
+modifySharedStateLockedWith
+  :: MonadIO m
+  => ArkhamEpicEventId
+  -> (SharedEventState -> (SharedEventState, a))
+  -> ReaderT SqlBackend m (SharedEventState, a)
+modifySharedStateLockedWith eid f = do
+  locked <- select do
+    e <- from $ table @ArkhamEpicEvent
+    where_ $ e.id ==. val eid
+    locking forUpdate
+    pure e
+  case locked of
+    [] -> error "modifySharedStateLockedWith: epic event row vanished mid-transaction"
+    (Entity _ e : _) -> do
+      now <- liftIO getCurrentTime
+      let (s1, a) = f (arkhamEpicEventSharedState e)
+      P.update
+        eid
+        [ ArkhamEpicEventSharedState P.=. s1
+        , ArkhamEpicEventUpdatedAt P.=. now
+        ]
+      pure (s1, a)
+
 -- | Revert deltas that were recorded for a particular game step (used by undo).
 -- Subtracts each delta's amount from the *current* value under lock; additive
 -- deltas commute, so this is correct even if other groups moved the counter in
@@ -123,3 +164,16 @@ revertEpicDeltasForGameStep eid gameId gameStep = do
             ]
           for_ stepRows \(Entity sid _) -> P.delete sid
           pure (Just s1)
+
+{- | The per-game undo FLOOR: the persistence step at/below which undo is walled
+off, because crossing it would rewind an epic act-clue advance whose shared
+effect (pool reset + generation bump that the OTHER groups then follow) cannot be
+locally undone. Set in 'Api.Handler.Arkham.Games.Shared.updateGame' when a group
+advances its act IN-GROUP; enforced by 'Api.Handler.Arkham.Undo.stepBack' /
+'stepBackToScenarioStep'. 0 (no row) means no floor — ordinary undo.
+-}
+getGameUndoFloor :: MonadIO m => ArkhamGameId -> ReaderT SqlBackend m Int
+getGameUndoFloor gameId = do
+  mRow <- P.getBy (UniqueGameUndoFloor gameId)
+  pure $ maybe 0 (arkhamGameUndoFloorFloorStep . entityVal) mRow
+

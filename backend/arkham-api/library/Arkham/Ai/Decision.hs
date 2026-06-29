@@ -92,6 +92,68 @@ investigates fire only where there are clues and @intellect >= shroud@;
 priority targets dominate; reaction\/fast abilities clear the "skip" baseline
 so free value (e.g. an after-kill clue) is taken even off-focus; otherwise
 the seat ends its turn rather than flailing.
+
+== Situational awareness (v4 additions)
+
+Four cheap, snapshot-read signals sharpen the policy:
+
+  * /Clue-spend objectives/. For an act that wants the GROUP to gather then
+    spend clues (e.g. The Barrier's @SpendClues PerPlayer 3 \@ Hallway@) we read
+    the group's spendable clues ('aiGroupClues'), the resolved target
+    ('aiClueTarget'), and the scoped spend location ('aiSpendLocation'). Movement
+    is two-phase — gather toward the nearest clue location while short, then walk
+    back to the spend location once the group has enough — and scoring drops the
+    investigate bonus to 0 once the target is met, so the seat stops
+    over-investigating and heads to the Hallway.
+
+  * /Weapon management/. Each controlled asset gets a keep value
+    ('aiAssetQuality'): a weapon's per-attack 'abDamage', else a fixed mid value.
+    A forced slot-discard drops the LOWEST (the Knife, never the .38). Playing a
+    redundant or strictly-worse weapon while we already field one is pushed below
+    ending the turn; a strictly better weapon is still a fine upgrade.
+
+  * /Doom pressure/ ('aiDoomPressure' = doom / agenda threshold). At\/above
+    'doomPressureThreshold' the seat bumps the act objective (fight its target,
+    gather its clues) and suppresses economy, closing out before the agenda
+    advances.
+
+  * /Self-preservation/. At low remaining health ('aiRemainingHealth') the seat
+    eases off attacking a dangerous enemy it cannot finish and favours evading
+    (also when sanity is low). And on the last action ('aiRemainingActions')
+    economy never displaces a genuinely productive action.
+
+== Teammate awareness (v5 additions)
+
+'gatherSituation' also snapshots every /other/ investigator at the table into
+'aiTeammates' (a list of 'TeammateInfo'), measured with the very helpers the
+seat uses for itself — location, modified combat\/intellect, best per-attack
+weapon damage, AI deck focus, and engaged enemies. The list is empty in a solo
+game (or when the AI seat is the only investigator), and three bounded
+coordination nudges in 'scoreChoice' are /all/ gated on it being non-empty, so
+the solo path is unchanged byte-for-byte. None of them is a veto: they only
+re-rank already-legal choices, never resurrect an illegal one, and never beat a
+directive ('aiPrioritySet').
+
+  * /No piling on/. A Fight on an enemy a /co-engaged/ teammate can already
+    finish soon (their combat clears its fight value and twice their weapon
+    damage covers its remaining health, i.e. ~2 turns) is nudged down by
+    'teammateHandledPenalty' so the seat does something else — unless that enemy
+    is a priority target, or no co-engaged teammate can actually finish it (in
+    which case helping is good and there is no penalty).
+
+  * /Role-aware investigate deferral/. An Investigate where a co-located,
+    clearly-better investigator stands (higher intellect, or an investigate deck
+    focus the seat lacks) can clear the location's clues themselves
+    ('deferClueCoverage') is nudged down by 'investigateDeferralPenalty', letting
+    the better investigator take them while the seat fights\/supports. The strongest investigator present is
+    unaffected.
+
+  * /Specialty division of labor/. Derived from the seat's own specialty
+    ('seatSpecialty'): a combat-specialty seat earns a small (±'specialtyDivisionDelta')
+    bonus to fighting and malus to investigating when the party fields a stronger
+    investigator; a clue-specialty seat earns the reverse when the party fields a
+    stronger fighter. Kept ≤ ±4 so kill-range, clue presence, priorities, and
+    doom pressure still dominate.
 -}
 module Arkham.Ai.Decision (
   decideAi,
@@ -99,9 +161,26 @@ module Arkham.Ai.Decision (
   decideAiAssist,
   chooseIndexFor,
   scoreChoice,
+  scoreBreakdown,
+  choiceFeatures,
+  learnedScore,
+  -- Exposed for the offline ML extraction tool (app-extract): the read-once
+  -- situation snapshot, the engine-indexed choice flattener, and the wrapper
+  -- stripper. These are the exact entry points the live decision path uses, so
+  -- the extracted dataset is distilled against the same code.
+  gatherSituation,
+  flattenChoices,
+  unwrapQuestion,
+  damageAssignmentShape,
+  damageAssignmentDecision,
+  slotDiscardShape,
+  slotDiscardDecision,
   AiSituation (..),
   EnemyInfo (..),
   SkillTestInfo (..),
+  TeammateInfo (..),
+  TokenOutcome (..),
+  passOdds,
   emptySituation,
 ) where
 
@@ -110,16 +189,26 @@ import Arkham.Prelude
 import Arkham.Ability (abilityActions, abilityIsFastAbility, abilityIsReactionAbility)
 import Arkham.Ability.Types (Ability, abilityCardCode, abilityIndex, abilityTarget)
 import Arkham.Act.Types (Field (ActCard))
+import Arkham.Agenda.Types (Field (AgendaCard))
 import Arkham.Ai.Focus (Focus (..), allFoci, focusForAction, focusForSkill)
+import Arkham.Ai.Model (LinearModel (..), activeLinearModel)
 import Arkham.Ai.State (AiPlayerState (..))
 import Arkham.Ai.Tags (
   ActObjective,
+  GameValueSpec (..),
   InvestigatorTag,
   Objective (..),
+  SoakTarget (..),
+  SoakTrigger (..),
+  abDamage,
   abFocuses,
+  agThreshold,
   aoFocus,
   aoObjective,
+  ctAbilities,
   ctFocuses,
+  ctRole,
+  ctSoakTrigger,
   ctWeight,
   itDeckFocus,
   itWeights,
@@ -127,12 +216,20 @@ import Arkham.Ai.Tags (
   lookupActObjective,
   lookupCardTag,
   lookupInvestigatorTag,
+  lookupScenarioTag,
+  stAgendas,
  )
-import Arkham.Asset.Types (Field (AssetCard))
+import Arkham.Asset.Types (Field (AssetCard, AssetRemainingHealth))
 import Arkham.Card (Card, printedCardCost)
-import Arkham.Card.CardCode (toCardCode)
-import Arkham.Card.CardDef (cdCardSubType, cdCardType, cdSkills, toCardDef)
+import Arkham.Card.CardCode (CardCode, toCardCode)
+import Arkham.Card.CardDef (cdCardSubType, cdCardTraits, cdCardType, cdSkills, toCardDef)
 import Arkham.Card.CardType (CardType (AssetType, EventType))
+import Arkham.ChaosToken (
+  ChaosTokenModifier (AutoFailModifier, AutoSuccessModifier),
+  ChaosTokenValue (..),
+  chaosTokenModifierToInt,
+ )
+import Arkham.Classes.HasChaosTokenValue (getChaosTokenValue)
 import Arkham.Classes.HasGame (HasGame, getGame)
 import Arkham.Classes.Query (select, selectOne)
 import Arkham.Constants (
@@ -144,38 +241,56 @@ import Arkham.Constants (
  )
 import Arkham.Distance (unDistance)
 import Arkham.Enemy.Types (
-  Field (EnemyEvade, EnemyFight, EnemyHealth, EnemyHealthDamage, EnemyLocation),
+  Field (EnemyEvade, EnemyFight, EnemyHealthDamage, EnemyLocation, EnemyRemainingHealth),
  )
 import Arkham.Game ()
 -- brings the orphan @Tracing Identity@ instance into scope
 import Arkham.Game.Base (gameScenarioSteps)
 import Arkham.GameEnv (getDistance, getSkillTest)
+import Arkham.Helpers (unDeck)
+import Arkham.Helpers.ChaosBag (getOnlyChaosTokensInBag)
+import Arkham.Helpers.Cost (getSpendableClueCount)
+import Arkham.Helpers.Doom (getDoomCount)
 import Arkham.Helpers.Investigator (getHandSize, getMaybeLocation, modifiedStatsOf)
 import Arkham.Helpers.Location (getCanMoveToMatchingLocations)
+import Arkham.Helpers.Query (getInvestigators, getPlayerCount)
 import Arkham.Helpers.SkillTest (
   getSkillTestDifficulty,
   getSkillTestInvestigator,
   getSkillTestMatchingSkillIcons,
   getSkillTestModifiedSkillValue,
  )
-import Arkham.Id (EnemyId, InvestigatorId, LocationId, PlayerId, ScenarioId (..))
+import Arkham.Id (AssetId, EnemyId, InvestigatorId, LocationId, PlayerId, ScenarioId (..), unInvestigatorId)
 import Arkham.Investigator.Types (
-  Field (InvestigatorHand, InvestigatorRemainingActions, InvestigatorResources),
+  Field (
+    InvestigatorDeck,
+    InvestigatorHand,
+    InvestigatorRemainingActions,
+    InvestigatorRemainingHealth,
+    InvestigatorRemainingSanity,
+    InvestigatorResources
+  ),
  )
 import Arkham.Location.Types (Field (LocationClues, LocationShroud))
 import Arkham.Matcher (
   assetControlledBy,
   enemyEngagedWith,
   enemyIs,
+  notInvestigator,
   pattern AnyAct,
+  pattern AnyAgenda,
+  pattern AnyEnemy,
   pattern AnyInPlayEnemy,
   pattern InvestigatorIsPlayer,
   pattern LocationWithAnyClues,
   pattern TheScenario,
  )
-import Arkham.Matcher.Location (LocationMatcher (Anywhere, ClosestPathLocation, LocationWithId))
+import Arkham.Matcher.Location (
+  LocationMatcher (Anywhere, ClosestPathLocation, LocationWithEnemy, LocationWithId, LocationWithTitle, UnrevealedLocation),
+ )
 import Arkham.Message (
   Message,
+  pattern Discard,
   pattern InitiatePlayCardWithWindows,
   pattern SkillTestCommitCard,
   pattern SkillTestUncommitCard,
@@ -187,6 +302,7 @@ import Arkham.Source (Source (GameSource))
 import Arkham.Stats (Stats, statsSkillValue)
 import Arkham.Target (Target (..))
 import Arkham.Tracing (Tracing)
+import Arkham.Trait (Trait (Weapon))
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import Entity.Answer (
@@ -293,19 +409,28 @@ same invariant as 'decideAi'): for the assist 'ChooseOne' the offset is 0.
 decideAiAssist :: HasGame m => PlayerId -> Question Message -> m (Maybe Answer)
 decideAiAssist pid q0 = do
   matching <- getSkillTestMatchingSkillIcons
-  steps <- gameScenarioSteps <$> getGame
-  pure $ case flattenChoices (unwrapQuestion q0) of
-    Just (cs, off) ->
-      let commits =
-            [ (off + i, matchIconValue matching card)
-            | (i, ui) <- withIndex cs
-            , Just card <- [commitCardOf ui]
-            ]
-       in case maxesBy snd commits of
-            ((i, _) : _) ->
-              Just (Answer QuestionResponse {qrChoice = i, qrPlayerId = Just pid, qrQuestionVersion = Just steps})
-            [] -> Nothing
-    Nothing -> Nothing
+  g <- getGame
+  -- Resolve the performer's current pass odds in the pure snapshot (like
+  -- 'decideAi'), keeping the public constraint at 'HasGame'. Don't burn an assist
+  -- card onto a test the performer has already locked (odds >= the commit
+  -- threshold); an unknown bag (Nothing) falls through to the old always-commit.
+  let steps = gameScenarioSteps g
+      mOdds = runIdentity (runReaderT assistPerformerOdds g)
+  pure $
+    if maybe False (>= commitOddsThreshold) mOdds
+      then Nothing
+      else case flattenChoices (unwrapQuestion q0) of
+        Just (cs, off) ->
+          let commits =
+                [ (off + i, matchIconValue matching card)
+                | (i, ui) <- withIndex cs
+                , Just card <- [commitCardOf ui]
+                ]
+           in case maxesBy snd commits of
+                ((i, _) : _) ->
+                  Just (Answer QuestionResponse {qrChoice = i, qrPlayerId = Just pid, qrQuestionVersion = Just steps})
+                [] -> Nothing
+        Nothing -> Nothing
 
 -- * Situation
 
@@ -314,6 +439,12 @@ decideAiAssist pid q0 = do
 -}
 data EnemyInfo = EnemyInfo
   { eiRemainingHealth :: Maybe Int
+  -- ^ health still on the enemy (total health minus damage tokens), @Nothing@
+  -- when it cannot be defeated by damage.
+  , eiAttackDamage :: Int
+  -- ^ the health damage this enemy deals per attack ('EnemyHealthDamage'); the
+  -- self-preservation gate treats an engaged enemy as dangerous when this meets
+  -- or exceeds our remaining health.
   , eiFight :: Maybe Int
   , eiEvade :: Maybe Int
   }
@@ -329,6 +460,60 @@ data SkillTestInfo = SkillTestInfo
   -- ^ the modified difficulty, if known.
   , stiMatchingIcons :: Set SkillIcon
   -- ^ the icon set that counts toward this test (includes @WildIcon@).
+  }
+  deriving stock Show
+
+{- | The resolved effect of a single chaos token on a skill test, captured once
+per decision (in 'resolveBagOutcomes') so 'passOdds' can compute a pass
+probability without re-querying the bag per choice. 'OutcomeMod' carries the
+token's numeric modifier; the two auto outcomes short-circuit the comparison.
+-}
+data TokenOutcome = OutcomeFail | OutcomeSucceed | OutcomeMod Int
+  deriving stock (Eq, Show)
+
+{- | P(success) of a single uniform chaos-token draw against a skill value and a
+difficulty: the fraction of outcomes that pass. An 'OutcomeSucceed' always
+passes, an 'OutcomeFail' never does, and an 'OutcomeMod m' passes iff
+@skillValue + m >= difficulty@. 'Nothing' when the outcome list is empty (the
+bag is unknown — no scenario / between scenarios — so callers fall back to the
+prior coarse heuristics). Uses 'foldl'', never the partial ClassyPrelude
+'maximum'.
+-}
+passOdds :: [TokenOutcome] -> Int -> Int -> Maybe Double
+passOdds outcomes skillValue difficulty = case outcomes of
+  [] -> Nothing
+  _ ->
+    let denom = length outcomes
+        numer = foldl' (\acc o -> if passes o then acc + 1 else acc) (0 :: Int) outcomes
+     in Just (fromIntegral numer / fromIntegral denom)
+ where
+  passes = \case
+    OutcomeSucceed -> True
+    OutcomeFail -> False
+    OutcomeMod m -> skillValue + m >= difficulty
+
+{- | A coarse, snapshot read of one /other/ investigator at the table, captured
+once per decision so the seat can coordinate rather than act in a vacuum. Every
+field is read with the same helpers the seat reads for itself (and that
+'Arkham.Ai.Questions' uses), so the two stay consistent.
+-}
+data TeammateInfo = TeammateInfo
+  { tmLocation :: Maybe LocationId
+  -- ^ the teammate's current location ('getMaybeLocation'); 'Nothing' when off the map.
+  , tmIntellect :: Int
+  -- ^ their modified intellect ('modifiedStatsOf'); the investigate-deferral yardstick.
+  , tmCombat :: Int
+  -- ^ their modified combat ('modifiedStatsOf'); the fight to-hit yardstick.
+  , tmWeaponDamage :: Int
+  {- ^ the most damage a single controlled weapon's tagged Fight ability deals per
+  attack ('abDamage', the same 'weaponDamageOf' fold the seat uses), floored at 1.
+  -}
+  , tmDeckFocus :: Maybe Focus
+  {- ^ their AI profile's deck focus ('itDeckFocus'), when the controlled
+  investigator is tagged in @ai-tags.json@; 'Nothing' for an untagged seat.
+  -}
+  , tmEngaged :: [EnemyId]
+  -- ^ the enemies engaged with them ('enemyEngagedWith'); who is already busy with what.
   }
   deriving stock Show
 
@@ -350,12 +535,29 @@ data AiSituation = AiSituation
   -- ^ plumbed for future "is drawing safe / do we have an action to spare" gating
   , aiRemainingActions :: Int
   -- ^ plumbed for future action-economy gating
+  , aiLocation :: Maybe LocationId
+  {- ^ the seat's own current location; the co-location yardstick for the
+  role-aware investigate-deferral teammate nudge ('scoreChoice').
+  -}
   , aiLocationClues :: Int
   , aiLocationShroud :: Maybe Int
   , aiEnemies :: Map EnemyId EnemyInfo
+  , aiTeammates :: [TeammateInfo]
+  {- ^ the other investigators at the table (empty when solo / the only AI seat),
+  read once in 'gatherSituation'. Drives the three bounded coordination nudges in
+  'scoreChoice'; an empty list makes every one of them a no-op, so the solo path
+  is unchanged.
+  -}
   , aiPrioritySet :: [Target]
   , aiSkillTest :: Maybe SkillTestInfo
   -- ^ live skill-test snapshot; drives the commit-window special case.
+  , aiBagOutcomes :: [TokenOutcome]
+  {- ^ the live chaos bag resolved to one 'TokenOutcome' per physical token (so
+  duplicate faces are count-weighted), read once in 'gatherSituation' via
+  'resolveBagOutcomes'. Empty when there is no scenario / between scenarios, in
+  which case every 'passOdds'-driven score falls back to its prior coarse value.
+  Drives the odds-based fight\/evade\/investigate scoring and the commit decision.
+  -}
   , aiMoveTarget :: Maybe LocationId
   -- ^ the immediate one-hop location to step to toward the active objective.
   , aiLocationDistances :: Map LocationId Int
@@ -375,6 +577,60 @@ data AiSituation = AiSituation
   {- ^ hand is below the max-hand-size limit; gates drawing so we never draw into
   a discard.
   -}
+  , aiWeaknessDrawRisk :: Double
+  {- ^ fraction of the seat's deck that is a weakness (cards with a
+  'cdCardSubType'), read once in 'gatherSituation'; 0 for an empty deck. Pushes
+  the draw economy score down so the seat is wary of drawing when a weakness is
+  likely on top.
+  -}
+  , aiSoakAssets :: Map AssetId (CardCode, Int)
+  {- ^ each controlled asset's card code and current remaining health (soak room;
+  'AssetRemainingHealth', @Nothing@ → 0). Drives the soak-trigger damage-routing
+  in 'damageAssignmentDecision'.
+  -}
+  , aiBestWeaponDamage :: Int
+  {- ^ the most damage a single controlled weapon's tagged Fight ability can deal
+  per attack ('abDamage'), floored at 1 (the unarmed base attack). The kill-range
+  yardstick for "would chipping this enemy bring it into one-attack reach?".
+  -}
+  , aiControlsWeapon :: Bool
+  {- ^ we already control at least one Weapon-trait asset. Gates the card-play
+  redundancy penalty so a second, no-better weapon (a Knife over the .38) is not
+  played, while a strictly-better weapon upgrade still is.
+  -}
+  , aiAssetQuality :: Map AssetId Int
+  {- ^ per-controlled-asset keep value: a weapon's tagged per-attack 'abDamage',
+  or a fixed mid value ('nonWeaponQuality') for a non-weapon. The forced
+  slot-discard prompt drops the LOWEST, so a Knife (1) is discarded before the
+  .38\/Machete (2).
+  -}
+  , aiGroupClues :: Int
+  {- ^ the whole group's spendable clues ('getSpendableClueCount' over
+  'getInvestigators'); compared against 'aiClueTarget' to decide gather-vs-spend
+  for a clue-spend act objective.
+  -}
+  , aiClueTarget :: Maybe Int
+  {- ^ the resolved clue count a 'SpendCluesObjective' demands (per 'resolveSpec'),
+  or 'Nothing' when the current act is not a clue-spend objective.
+  -}
+  , aiSpendLocation :: Maybe LocationId
+  {- ^ the location a scoped clue-spend objective must be spent at (e.g. the
+  Hallway), or 'Nothing' for an @"anywhere"@ scope (or no clue-spend objective).
+  Movement walks back here once the group has enough clues.
+  -}
+  , aiObjectiveEnemy :: Maybe EnemyId
+  {- ^ the in-play enemy the current act's 'DefeatEnemyObjective' targets, if any.
+  Doom pressure bumps fighting precisely this enemy.
+  -}
+  , aiDoomPressure :: Double
+  {- ^ current doom divided by the current agenda's advance threshold (0 when no
+  agenda\/threshold is tagged). At\/above 'doomPressureThreshold' the seat leans
+  into the act objective and stops spending actions on economy.
+  -}
+  , aiRemainingHealth :: Int
+  -- ^ remaining health ('InvestigatorRemainingHealth'); gates self-preservation.
+  , aiRemainingSanity :: Int
+  -- ^ remaining sanity ('InvestigatorRemainingSanity'); also raises evade when low.
   }
   deriving stock Show
 
@@ -392,16 +648,32 @@ emptySituation state =
     , aiStats = Nothing
     , aiResources = 0
     , aiRemainingActions = 0
+    , aiLocation = Nothing
     , aiLocationClues = 0
     , aiLocationShroud = Nothing
     , aiEnemies = mempty
+    , aiTeammates = []
     , aiPrioritySet = aiPriorities state
     , aiSkillTest = Nothing
+    , aiBagOutcomes = []
     , aiMoveTarget = Nothing
     , aiLocationDistances = mempty
     , aiResourceShortfall = 0
     , aiShouldDig = False
     , aiHandNotFull = True
+    , aiWeaknessDrawRisk = 0
+    , aiSoakAssets = mempty
+    , aiBestWeaponDamage = 1
+    , aiControlsWeapon = False
+    , aiAssetQuality = mempty
+    , aiGroupClues = 0
+    , aiClueTarget = Nothing
+    , aiSpendLocation = Nothing
+    , aiObjectiveEnemy = Nothing
+    , aiDoomPressure = 0
+    , -- no seat resolved: keep the safety gate off with a high remaining-vitality default
+      aiRemainingHealth = 99
+    , aiRemainingSanity = 99
     }
 
 gatherSituation :: (HasGame n, Tracing n) => AiPlayerState -> PlayerId -> n AiSituation
@@ -423,22 +695,87 @@ gatherSituation state pid = do
           pure (c, s)
       enemyIds <- select AnyInPlayEnemy
       enemyInfos <- for enemyIds $ \eid -> do
-        h <- field EnemyHealth eid
-        d <- field EnemyHealthDamage eid
+        -- Remaining health is total health minus damage tokens on the enemy
+        -- ('EnemyRemainingHealth'); 'EnemyHealthDamage' is instead the enemy's
+        -- per-attack damage, captured separately for the self-preservation gate.
+        rh <- field EnemyRemainingHealth eid
+        atk <- field EnemyHealthDamage eid
         f <- field EnemyFight eid
         ev <- field EnemyEvade eid
-        pure (eid, EnemyInfo (fmap (subtract d) h) f ev)
+        pure (eid, EnemyInfo rh atk f ev)
+      -- Teammate awareness: snapshot every OTHER investigator with the same reads
+      -- the seat takes for itself (and 'Arkham.Ai.Questions' uses), so the policy
+      -- can coordinate. Empty in solo / single-AI games, which is exactly what
+      -- keeps the coordination nudges in 'scoreChoice' no-ops.
+      teammates <- gatherTeammates iid
       -- Read hand + controlled in-play asset cards once; both the focus blend and
       -- the economy snapshot consume them, so we never re-query these fields.
       handCards <- field InvestigatorHand iid
       assetIds <- select (assetControlledBy iid)
       assetCards <- traverse (field AssetCard) assetIds
+      -- Pair each controlled asset with its card code and current soak room; the
+      -- damage-assignment special case routes attack damage onto soak-trigger
+      -- assets (Guard Dog) using this.
+      soakAssets <- for (zip assetIds assetCards) $ \(aid, card) -> do
+        remaining <- field AssetRemainingHealth aid
+        pure (aid, (toCardCode card, fromMaybe 0 remaining))
       mActObjective <- currentActObjective
+      -- Clue-spend objective awareness: when the act wants the GROUP to gather
+      -- then spend clues, snapshot the group's spendable clues, the resolved
+      -- target, and the (scoped) spend location. Movement and scoring use these
+      -- to route gather-then-spend rather than camping a clue location forever.
+      (groupClues, clueTarget, spendLocation) <- case aoObjective <$> mActObjective of
+        Just (SpendCluesObjective amount scope) -> do
+          clues <- getSpendableClueCount =<< getInvestigators
+          target <- resolveSpec amount
+          spendLoc <-
+            if scope == "anywhere" then pure Nothing else selectOne (LocationWithTitle scope)
+          pure (clues, Just target, spendLoc)
+        _ -> pure (0, Nothing, Nothing)
+      -- The in-play enemy the current act's defeat-enemy objective targets, used
+      -- to bump fighting precisely that enemy under doom pressure.
+      objectiveEnemy <- case aoObjective <$> mActObjective of
+        Just (DefeatEnemyObjective cc) -> selectOne (enemyIs cc)
+        _ -> pure Nothing
+      doomPressure <- gatherDoomPressure
+      remHealth <- field InvestigatorRemainingHealth iid
+      remSanity <- field InvestigatorRemainingSanity iid
+      -- Resolve the chaos bag ONCE (one outcome per physical token); empty when
+      -- there is no scenario, which keeps every odds-based score on its prior
+      -- coarse fallback. Kept out of the per-choice hot path.
+      bagOutcomes <- resolveBagOutcomes iid
+      -- Weakness draw-risk: how much of the remaining deck is a weakness, used to
+      -- discourage drawing when a weakness is likely to come up.
+      deckCards <- unDeck <$> field InvestigatorDeck iid
       let
         mTag = lookupInvestigatorTag (aiInvestigatorCode state)
+        deckSize = length deckCards
+        weaknessCount = length (filter (isJust . cdCardSubType . toCardDef) deckCards)
+        weaknessDrawRisk =
+          if deckSize == 0 then 0 else fromIntegral weaknessCount / fromIntegral deckSize :: Double
         focusWeights =
           focusWeightsFor (aiFocusOverride state) mTag (Just stats) handCards assetCards mActObjective
         focus = computeActiveFocus state focusWeights
+        -- The best single-attack damage from any controlled weapon's tagged Fight
+        -- ability, floored at the unarmed base attack (1). Used as the kill-range
+        -- yardstick when deciding whether a soak chip sets up a finisher.
+        bestWeaponDamage = foldl' max 1 (mapMaybe weaponDamageOf assetCards)
+        -- We already field a Weapon-trait asset (gates the redundancy penalty).
+        controlsWeapon = any (member Weapon . cdCardTraits . toCardDef) assetCards
+        -- Per-asset keep value: a weapon's per-attack damage, else a fixed mid
+        -- value. The slot-discard prompt drops the LOWEST, so a Knife (1) goes
+        -- before the .38 (2).
+        assetQuality =
+          Map.fromList [(aid, fromMaybe nonWeaponQuality (weaponDamageOf card)) | (aid, card) <- zip assetIds assetCards]
+        -- A fighter (combat is its stronger stat) yields clue-gathering when the
+        -- party holds a stronger investigator who can cover the clues — it should
+        -- not chase clue locations (it just bounces and wastes its combat edge).
+        -- 'canFight' then decides whether it positions toward an enemy (a real
+        -- weapon) or simply holds with the team and sets up.
+        yieldClues =
+          statsSkillValue stats SkillCombat > statsSkillValue stats SkillIntellect
+            && any ((> statsSkillValue stats SkillIntellect) . tmIntellect) teammates
+        canFight = bestWeaponDamage >= 2
       skillTestInfo <- gatherSkillTest
       (moveTarget, distances) <-
         gatherMovement
@@ -450,7 +787,12 @@ gatherSituation state pid = do
           locShroud
           stats
           (aoObjective <$> mActObjective)
+          groupClues
+          clueTarget
+          spendLocation
           (aiPriorities state)
+          yieldClues
+          canFight
       econ <- gatherEconomy iid focus resources handCards assetCards
       pure
         AiSituation
@@ -462,17 +804,66 @@ gatherSituation state pid = do
           , aiStats = Just stats
           , aiResources = resources
           , aiRemainingActions = remActions
+          , aiLocation = mLoc
           , aiLocationClues = locClues
           , aiLocationShroud = locShroud
           , aiEnemies = Map.fromList enemyInfos
+          , aiTeammates = teammates
           , aiPrioritySet = aiPriorities state
           , aiSkillTest = skillTestInfo
+          , aiBagOutcomes = bagOutcomes
           , aiMoveTarget = moveTarget
           , aiLocationDistances = distances
           , aiResourceShortfall = ecResourceShortfall econ
           , aiShouldDig = ecShouldDig econ
           , aiHandNotFull = ecHandNotFull econ
+          , aiWeaknessDrawRisk = weaknessDrawRisk
+          , aiSoakAssets = Map.fromList soakAssets
+          , aiBestWeaponDamage = bestWeaponDamage
+          , aiControlsWeapon = controlsWeapon
+          , aiAssetQuality = assetQuality
+          , aiGroupClues = groupClues
+          , aiClueTarget = clueTarget
+          , aiSpendLocation = spendLocation
+          , aiObjectiveEnemy = objectiveEnemy
+          , aiDoomPressure = doomPressure
+          , aiRemainingHealth = remHealth
+          , aiRemainingSanity = remSanity
           }
+
+{- | Snapshot every /other/ investigator at the table into a 'TeammateInfo'. The
+list is empty in a solo game (or when the AI seat is the only investigator),
+which is the invariant the coordination nudges in 'scoreChoice' rely on to stay
+no-ops on the solo path. Each field uses the same helper the seat reads for
+itself, so a teammate is measured exactly as the seat measures itself:
+
+  * location via 'getMaybeLocation';
+  * combat\/intellect via 'modifiedStatsOf';
+  * best per-attack weapon damage via the same 'weaponDamageOf' fold (floored at
+    the unarmed base attack, 1);
+  * deck focus via the controlled investigator's @ai-tags.json@ profile
+    ('lookupInvestigatorTag' on its 'unInvestigatorId' card code → 'itDeckFocus'),
+    'Nothing' when untagged;
+  * engaged enemies via 'enemyEngagedWith'.
+-}
+gatherTeammates :: (HasGame n, Tracing n) => InvestigatorId -> n [TeammateInfo]
+gatherTeammates iid = do
+  tmIids <- select (notInvestigator iid)
+  for tmIids $ \tmIid -> do
+    tmLoc <- getMaybeLocation tmIid
+    tmStats <- modifiedStatsOf Nothing tmIid
+    engagedEnemies <- select (enemyEngagedWith tmIid)
+    tmAssetCards <- traverse (field AssetCard) =<< select (assetControlledBy tmIid)
+    pure
+      TeammateInfo
+        { tmLocation = tmLoc
+        , tmIntellect = statsSkillValue tmStats SkillIntellect
+        , tmCombat = statsSkillValue tmStats SkillCombat
+        , -- same fold as the seat's 'aiBestWeaponDamage' (floored at the unarmed 1)
+          tmWeaponDamage = foldl' max 1 (mapMaybe weaponDamageOf tmAssetCards)
+        , tmDeckFocus = itDeckFocus <$> lookupInvestigatorTag (unInvestigatorId tmIid)
+        , tmEngaged = engagedEnemies
+        }
 
 -- * Active focus
 
@@ -570,6 +961,34 @@ currentActObjective = do
       pure (lookupActObjective scc (toCardCode card))
     _ -> pure Nothing
 
+{- | Resolve a tagged 'GameValueSpec' to a concrete count in the live snapshot: a
+static value verbatim, a per-player value scaled by 'getPlayerCount'.
+-}
+resolveSpec :: (HasGame m, Tracing m) => GameValueSpec -> m Int
+resolveSpec = \case
+  StaticV n -> pure n
+  PerPlayerV n -> (n *) <$> getPlayerCount
+
+{- | Doom pressure: current doom over the current agenda's advance threshold, in
+@[0, ∞)@ (typically @0..1@). 0 when there is no scenario\/agenda, the agenda has
+no ai-tag, or its threshold resolves non-positive. Read once and stored as
+'aiDoomPressure'; gating happens in 'scoreChoice'.
+-}
+gatherDoomPressure :: (HasGame n, Tracing n) => n Double
+gatherDoomPressure = do
+  mScenario <- selectOne TheScenario
+  mAgenda <- selectOne AnyAgenda
+  case (mScenario, mAgenda) of
+    (Just (ScenarioId scc), Just aid) -> do
+      card <- field AgendaCard aid
+      case lookupScenarioTag scc >>= Map.lookup (toCardCode card) . stAgendas of
+        Nothing -> pure 0
+        Just info -> do
+          threshold <- resolveSpec (agThreshold info)
+          doom <- getDoomCount
+          pure $ if threshold <= 0 then 0 else fromIntegral doom / fromIntegral threshold
+    _ -> pure 0
+
 -- * Skill test snapshot
 
 {- | Capture the live skill test, or 'Nothing' when none is open. We guard the
@@ -585,6 +1004,55 @@ gatherSkillTest =
       icons <- getSkillTestMatchingSkillIcons
       pure (Just (SkillTestInfo {stiCurrent = cur, stiDifficulty = diff, stiMatchingIcons = icons}))
 
+-- * Chaos bag odds
+
+{- | Resolve the live chaos bag into one 'TokenOutcome' per /physical/ token, so
+duplicate faces are count-weighted in 'passOdds'. Returns '[]' when the bag is
+empty (no scenario / between scenarios): the '()' 'getChaosTokenValue' instance
+errors with no scenario, so we resolve only when the bag is non-empty. Each
+DISTINCT face is resolved exactly once into a @Map ChaosTokenFace TokenOutcome@,
+then expanded back across every physical token — keeping the per-face value query
+out of any per-choice hot path. 'AutoFailModifier' \/ 'AutoSuccessModifier' map to
+the short-circuit outcomes; every other modifier goes through
+'chaosTokenModifierToInt' (whose 'Nothing' only arises for the auto modifiers we
+already handled, so we treat it defensively as @OutcomeMod 0@).
+-}
+resolveBagOutcomes :: (HasGame n, Tracing n) => InvestigatorId -> n [TokenOutcome]
+resolveBagOutcomes iid = do
+  tokens <- getOnlyChaosTokensInBag
+  if null tokens
+    then pure []
+    else do
+      let faces = Set.toList (Set.fromList (map (.face) tokens))
+      resolved <- for faces $ \face -> do
+        ChaosTokenValue _ modifier <- getChaosTokenValue iid face ()
+        outcome <- case modifier of
+          AutoFailModifier -> pure OutcomeFail
+          AutoSuccessModifier -> pure OutcomeSucceed
+          _ -> OutcomeMod . fromMaybe 0 <$> chaosTokenModifierToInt modifier
+        pure (face, outcome)
+      let outcomeMap = Map.fromList resolved
+      pure [Map.findWithDefault (OutcomeMod 0) t.face outcomeMap | t <- tokens]
+
+{- | The performer's current pass odds in the open skill test, resolved against
+the live bag using the performer's own token values, or 'Nothing' when there is
+no open test, no resolvable performer, no difficulty, or an empty bag. Used by
+'decideAiAssist' so the seat does not burn an assist card onto a test the
+performer has already locked.
+-}
+assistPerformerOdds :: (HasGame n, Tracing n) => n (Maybe Double)
+assistPerformerOdds =
+  getSkillTest >>= \case
+    Nothing -> pure Nothing
+    Just _ ->
+      getSkillTestInvestigator >>= \case
+        Nothing -> pure Nothing
+        Just performer -> do
+          outcomes <- resolveBagOutcomes performer
+          cur <- getSkillTestModifiedSkillValue
+          mDiff <- getSkillTestDifficulty
+          pure (mDiff >>= passOdds outcomes cur)
+
 -- * Movement targeting
 
 {- | Compute the immediate one-hop 'aiMoveTarget' and the distance map used to
@@ -593,6 +1061,12 @@ fight in place). Otherwise a user-set /priority/ location\/enemy reroutes
 movement ahead of everything else; absent a priority we route toward clues
 (investigate focus) or the act's defeat-enemy target (combat focus). Every
 read is guarded so a missing location\/enemy just yields 'Nothing'.
+
+For a clue-spend act objective the investigate route is two-phase: while the
+group is still short of the target (@groupClues < target@) we keep heading to
+the nearest clue location to gather; once the group has enough
+(@groupClues >= target@) we walk back to the scoped spend location (the Hallway)
+so the clues can actually be cashed in — an @"anywhere"@ scope just stays put.
 -}
 gatherMovement
   :: (HasGame n, Tracing n)
@@ -604,27 +1078,72 @@ gatherMovement
   -> Maybe Int
   -> Stats
   -> Maybe Objective
+  -> Int
+  -> Maybe Int
+  -> Maybe LocationId
   -> [Target]
+  -> Bool
+  -- ^ yield clue-gathering to a stronger investigator (route as a combat seat)
+  -> Bool
+  -- ^ can meaningfully fight (a real weapon) — gates positioning toward an enemy
   -> n (Maybe LocationId, Map LocationId Int)
-gatherMovement iid focus engaged mHere locClues mShroud stats mObjective priorities
+gatherMovement iid focus engaged mHere locClues mShroud stats mObjective groupClues mClueTarget mSpendLocation priorities yieldClues canFight
   | engaged = pure (Nothing, mempty)
   | otherwise = do
       mPriorityDest <- priorityDestination
       (mStep, mDest) <- case mPriorityDest of
         Just dest -> routeToward dest
-        Nothing -> case focus of
-          InvestigateFocus
-            | worthInvestigatingHere -> pure (Nothing, Nothing)
-            | otherwise -> investigateRoute
+        Nothing -> case effFocus of
+          InvestigateFocus -> case (mObjective, mClueTarget) of
+            -- Enough clues gathered: head to the spend location instead of
+            -- camping a clue location. "anywhere" scope stays put.
+            (Just (SpendCluesObjective {}), Just target)
+              | groupClues >= target -> maybe (pure (Nothing, Nothing)) routeToward mSpendLocation
+            _ -> gatherClues
           CombatFocus -> case mObjective of
             Just (DefeatEnemyObjective cc) -> enemyRoute cc
-            _ -> pure (Nothing, Nothing)
+            -- No act-defined enemy: a fighter gravitates to the nearest enemy on
+            -- the board to engage/tank it — but only with a real weapon
+            -- ('canFight'). An unarmed seat holds with the team and sets up.
+            _ -> if canFight then nearestEnemyRoute else pure (Nothing, Nothing)
           _ -> pure (Nothing, Nothing)
       distances <- maybe (pure mempty) distancesTo mDest
       pure (mStep, distances)
  where
+  -- A fighter yielding clue-gathering to a stronger investigator routes as a
+  -- combat seat (toward the nearest enemy / its objective target) instead of
+  -- chasing clue locations it is poorly suited for.
+  effFocus = if yieldClues then CombatFocus else focus
+
+  -- One-hop step toward the nearest board enemy's location (for a combat seat
+  -- with no act-defined target). Stays put when there is no enemy or no path.
+  nearestEnemyRoute = case mHere of
+    Nothing -> pure (Nothing, Nothing)
+    Just here -> do
+      enemyLocs <- select (LocationWithEnemy AnyEnemy)
+      nearestLocation here enemyLocs >>= \case
+        Nothing -> pure (Nothing, Nothing)
+        Just dest -> routeToward dest
+
   worthInvestigatingHere =
     locClues > 0 && maybe True (statsSkillValue stats SkillIntellect >=) mShroud
+
+  -- Gather clues: stay if this location is worth investigating, else route to
+  -- the nearest clue location.
+  gatherClues
+    | worthInvestigatingHere = pure (Nothing, Nothing)
+    | otherwise = do
+        routed@(_, mDest) <- investigateRoute
+        case mDest of
+          Just _ -> pure routed -- an easier/other revealed clue location to head to
+          -- No other reachable clue location. If we're standing on clues, STAY and
+          -- take what we can (even at marginal odds) rather than wandering off to
+          -- explore — leaving a clue location to look for clues elsewhere bounces
+          -- us between it and the rooms beyond (the Hallway<->Cellar oscillation).
+          -- Only explore unrevealed rooms when we are NOT already on clues.
+          Nothing
+            | locClues > 0 -> pure (Nothing, Nothing)
+            | otherwise -> exploreRoute
 
   -- A user-set priority reroutes movement ahead of any act-objective routing:
   -- the first prioritized location, else the first prioritized enemy's current
@@ -661,6 +1180,23 @@ gatherMovement iid focus engaged mHere locClues mShroud stats mObjective priorit
         Just here -> do
           clueLocs <- select LocationWithAnyClues
           nearestLocation here clueLocs >>= \case
+            Nothing -> pure (Nothing, Nothing)
+            Just dest -> do
+              mStep <- selectOne (ClosestPathLocation here dest)
+              pure (mStep, Just dest)
+
+  -- Explore: the objective still wants clues but no revealed clue location
+  -- remains, so head to the nearest reachable UNREVEALED location — entering it
+  -- reveals it and places fresh clues to gather. Prefer an adjacent one.
+  exploreRoute = do
+    oneHop <- getCanMoveToMatchingLocations iid GameSource UnrevealedLocation
+    case oneHop of
+      (lid : _) -> pure (Just lid, Just lid)
+      [] -> case mHere of
+        Nothing -> pure (Nothing, Nothing)
+        Just here -> do
+          unrevealed <- select UnrevealedLocation
+          nearestLocation here unrevealed >>= \case
             Nothing -> pure (Nothing, Nothing)
             Just dest -> do
               mStep <- selectOne (ClosestPathLocation here dest)
@@ -769,29 +1305,164 @@ statFocus stats = case maxesBy snd skillPairs of
 -- * Answer construction
 
 buildAnswer :: AiSituation -> PlayerId -> Int -> Question Message -> Answer
-buildAnswer sit pid steps q0 = case unwrapQuestion q0 of
-  ChooseAmounts _ tgt choices _ ->
-    AmountsAnswer
-      AmountsResponse
-        { arAmounts = distributeAmounts tgt (amountBounds choices)
-        , arQuestionVersion = Just steps
-        , arPlayerId = Just pid
-        }
-  ChoosePaymentAmounts _ mtgt choices ->
-    PaymentAmountsAnswer
-      PaymentAmountsResponse
-        { parAmounts = distributeAmounts (fromMaybe (MaxAmountTarget 0) mtgt) (paymentBounds choices)
-        , parQuestionVersion = Just steps
-        , parPlayerId = Just pid
-        }
-  Read _ rc _ -> idx (readChoiceIndex rc)
-  -- Everything else is an index question (or an out-of-scope shape, for which
-  -- 'chooseIndexFor' returns Nothing and we answer index 0 defensively).
-  q -> idx (fromMaybe 0 (chooseIndexFor sit q))
+buildAnswer sit pid steps q0
+  -- Enemy-attack damage/horror assignment (one point at a time): route the point
+  -- onto a soak-trigger ally (Guard Dog) when that chips a killable enemy, else
+  -- fall through to the generic pick. Detected on the raw question so we can read
+  -- the attacker off the 'QuestionWithSource' wrapper before it is stripped.
+  | Just (attacker, cs) <- damageAssignmentShape q0 =
+      idx (damageAssignmentDecision sit attacker cs)
+  -- Forced slot-discard (a ChooseOne whose every choice discards one of our
+  -- assets): drop the lowest-quality asset (the Knife), never the .38. Handled
+  -- before generic scoring, exactly like the damage-assignment shape.
+  | Just cs <- slotDiscardShape q0 =
+      idx (slotDiscardDecision sit cs)
+  | otherwise = case unwrapQuestion q0 of
+      ChooseAmounts _ tgt choices _ ->
+        AmountsAnswer
+          AmountsResponse
+            { arAmounts = distributeAmounts tgt (amountBounds choices)
+            , arQuestionVersion = Just steps
+            , arPlayerId = Just pid
+            }
+      ChoosePaymentAmounts _ mtgt choices ->
+        PaymentAmountsAnswer
+          PaymentAmountsResponse
+            { parAmounts = distributeAmounts (fromMaybe (MaxAmountTarget 0) mtgt) (paymentBounds choices)
+            , parQuestionVersion = Just steps
+            , parPlayerId = Just pid
+            }
+      Read _ rc _ -> idx (readChoiceIndex rc)
+      -- Everything else is an index question (or an out-of-scope shape, for which
+      -- 'chooseIndexFor' returns Nothing and we answer index 0 defensively).
+      q -> idx (fromMaybe 0 (chooseIndexFor sit q))
  where
   idx i = Answer QuestionResponse {qrChoice = i, qrPlayerId = Just pid, qrQuestionVersion = Just steps}
   amountBounds cs = [(c.choiceId, c.minBound, c.maxBound) | c <- cs]
   paymentBounds cs = [(c.choiceId, c.minBound, c.maxBound) | c <- cs]
+
+-- * Enemy-attack damage assignment (soak-trigger routing)
+
+{- | Detect an enemy-attack damage\/horror assignment question (the engine parks
+one point at a time): an optional 'QuestionWithSource' \/ 'QuestionLabel'
+wrapper around a bare 'ChooseOne' whose every selectable choice assigns a
+damage or horror token to an investigator or asset. Returns the attacking enemy
+(read from the 'QuestionWithSource' source, when present) and the flattened
+choice list (offset 0, so its indices are the engine's). 'Nothing' for any
+other shape, so non-assignment questions route through the generic path
+unchanged.
+-}
+damageAssignmentShape :: Question Message -> Maybe (Maybe EnemyId, [UI Message])
+damageAssignmentShape = \case
+  QuestionWithSource src _ inner -> (\cs -> (src.enemy, cs)) <$> damageChoices inner
+  q -> (\cs -> (Nothing, cs)) <$> damageChoices q
+ where
+  damageChoices = \case
+    QuestionLabel _ _ q -> damageChoices q
+    ChooseOne cs ->
+      let selectable = filter isSelectable cs
+       in if not (null selectable) && all isDamageOrHorrorComponent selectable
+            then Just cs
+            else Nothing
+    _ -> Nothing
+
+-- | Whether a choice assigns a damage or horror token to an investigator or asset.
+isDamageOrHorrorComponent :: UI Message -> Bool
+isDamageOrHorrorComponent = \case
+  ComponentLabel (InvestigatorComponent _ DamageToken) _ -> True
+  ComponentLabel (InvestigatorComponent _ HorrorToken) _ -> True
+  ComponentLabel (AssetComponent _ DamageToken) _ -> True
+  ComponentLabel (AssetComponent _ HorrorToken) _ -> True
+  _ -> False
+
+{- | Scores for routing a point of attack damage onto a soak-trigger asset. A
+/kill setup/ (the chip drops the enemy into one-attack kill range) beats a mere
+/chip/ (free damage that also spares the controller), and both beat the generic
+pick (which scores soak choices at 0).
+-}
+killSetupScore, chipScore :: Int
+killSetupScore = 2
+chipScore = 1
+
+{- | Pick the choice index for an enemy-attack damage assignment. Prefer a soak
+asset whose ai-tags carry a 'ctSoakTrigger' (e.g. Guard Dog, which damages the
+attacker when it soaks) while it still has soak room and there is an enemy worth
+chipping — strongly when the chip drops that enemy into one-attack kill range
+('aiBestWeaponDamage'), moderately for a free chip that also spares the
+controller (taken only while a point still leaves the ally alive, to avoid
+spending its last soak on a mere chip). Falls back to the generic 'bestByScore'
+pick (index 0 / current behavior) when no soak trigger helps, so non-trigger
+assignments are unchanged. The returned index is into @cs@, the wrapper-stripped
+'ChooseOne' list (offset 0).
+-}
+damageAssignmentDecision :: AiSituation -> Maybe EnemyId -> [UI Message] -> Int
+damageAssignmentDecision sit attacker cs = case maxesBy snd beneficial of
+  ((i, _) : _) -> i
+  [] -> bestByScore sit cs
+ where
+  beneficial =
+    [ (i, sc)
+    | (i, AssetDamageLabel aid _) <- withIndex cs
+    , Just (cc, remaining) <- [Map.lookup aid (aiSoakAssets sit)]
+    , remaining > 0
+    , Just tag <- [lookupCardTag cc]
+    , Just trig <- [ctSoakTrigger tag]
+    , let sc = soakValue remaining trig
+    , sc > 0
+    ]
+  -- Best chip score this trigger can produce against any enemy it can hit.
+  soakValue remaining trig = foldl' max 0 (map (chipValue remaining trig) (chipTargets trig))
+  -- The enemies a trigger can damage: the attacker for Guard Dog; any enemy
+  -- engaged with (hence colocated with) the seat for a colocated trigger.
+  chipTargets trig = case stTarget trig of
+    SoakAttacker -> [info | Just eid <- [attacker], Just info <- [Map.lookup eid (aiEnemies sit)]]
+    SoakColocated -> mapMaybe (`Map.lookup` aiEnemies sit) (aiEngaged sit)
+  -- Value of chipping one enemy: a kill setup when the chip brings it into
+  -- one-attack reach (and it is not already dead); a plain chip otherwise, but
+  -- only while the point would not spend the ally's last soak (remaining > 1).
+  chipValue remaining trig info = case eiRemainingHealth info of
+    Just rh
+      | rh <= 0 -> 0
+      | rh - stDamageToEnemy trig <= aiBestWeaponDamage sit -> killSetupScore
+      | remaining > 1 -> chipScore
+      | otherwise -> 0
+    Nothing -> 0
+
+-- * Forced slot-discard (drop the worst asset)
+
+{- | Detect a forced asset slot-discard 'ChooseOne': every selectable choice is a
+'TargetLabel' on an 'AssetTarget' whose first message is a 'Discard' (the
+@RefillSlots@ over-capacity prompt, and the explicit choose-and-discard-asset
+prompt). Returns the wrapper-stripped choice list (offset 0). 'Nothing' for any
+other shape so it falls through to generic scoring.
+-}
+slotDiscardShape :: Question Message -> Maybe [UI Message]
+slotDiscardShape q0 = case unwrapQuestion q0 of
+  ChooseOne cs ->
+    let selectable = filter isSelectable cs
+     in if not (null selectable) && all isAssetDiscardChoice selectable then Just cs else Nothing
+  _ -> Nothing
+
+-- | Whether a choice discards one of the seat's assets (its first message is a 'Discard').
+isAssetDiscardChoice :: UI Message -> Bool
+isAssetDiscardChoice = \case
+  TargetLabel (AssetTarget _) (Discard {} : _) -> True
+  _ -> False
+
+{- | Pick which asset to drop when forced to discard one: the controlled asset
+with the LOWEST 'aiAssetQuality' (ties resolve to the first), so a Knife (1) is
+discarded before a .38\/Machete (2). Assets we have no quality reading for fall
+back to 'nonWeaponQuality'. The returned index is into @cs@ (offset 0).
+-}
+slotDiscardDecision :: AiSituation -> [UI Message] -> Int
+slotDiscardDecision sit cs = case sortOn snd scored of
+  ((i, _) : _) -> i
+  [] -> 0
+ where
+  scored =
+    [ (i, Map.findWithDefault nonWeaponQuality aid (aiAssetQuality sit))
+    | (i, TargetLabel (AssetTarget aid) (Discard {} : _)) <- withIndex cs
+    ]
 
 {- | The engine index to answer for an index-style question, or 'Nothing' for a
 shape that needs a non-index 'Answer' (or that we do not model). Exposed for
@@ -816,11 +1487,20 @@ chooseIndexFor sit q0 = commitWindowDecision sit q <|> go q
 
 -- * Skill-test commit window (the hang fix)
 
-{- | One token of hedge against the chaos bag: we only press /Start/ once our
-committed total is at least @difficulty + 'commitBuffer'@.
+{- | One token of hedge against the chaos bag: the coarse fallback used only when
+the bag is unknown (no scenario) — we then press /Start/ once our committed total
+is at least @difficulty + 'commitBuffer'@.
 -}
 commitBuffer :: Int
 commitBuffer = 1
+
+{- | The pass-probability at or above which a test is "good enough": we bank it
+(press /Start/, keeping key cards) rather than committing more, and an assister
+declines to spend a card on it. Mirrors 'highOddsThreshold' — "if it can get
+75%+ without committing, weight that highly".
+-}
+commitOddsThreshold :: Double
+commitOddsThreshold = 0.75
 
 {- | If @q@ is the skill-test commit window (a 'ChooseOne' containing a
 'StartSkillTestButton'), decide between committing and starting; otherwise
@@ -829,21 +1509,39 @@ commitBuffer = 1
 -}
 commitWindowDecision :: AiSituation -> Question Message -> Maybe Int
 commitWindowDecision sit = \case
-  ChooseOne cs | any isStartSkillTestButton cs -> Just (decideCommit (aiSkillTest sit) cs)
+  ChooseOne cs | any isStartSkillTestButton cs -> Just (decideCommit (aiBagOutcomes sit) (aiSkillTest sit) cs)
   _ -> Nothing
 
-{- | Commit the highest-icon hand card until we clear @difficulty + buffer@,
-then press Start. Never uncommits. Terminates because every commit either
-raises the committed total or, once nothing committable adds a matching icon,
-falls through to Start (and the choice list shrinks with each commit anyway).
+{- | Commit the highest-icon hand card until the test is good enough, then press
+Start. Never uncommits.
+
+"Good enough" is odds-based when the bag is known: if our committed total already
+gives at least 'commitOddsThreshold' P(success) over a single draw we bank the
+test (press Start, saving cards). When the bag is unknown (no scenario, empty
+'aiBagOutcomes') we fall back to the old @total >= difficulty + 'commitBuffer'@
+hedge. Below the bar we commit the hand card adding the most matching icons.
+
+Terminates because every commit either raises the committed total or, once
+nothing committable adds a matching icon, falls through to Start (and the choice
+list shrinks with each commit anyway).
 -}
-decideCommit :: Maybe SkillTestInfo -> [UI Message] -> Int
-decideCommit mSti cs = case mSti of
+decideCommit :: [TokenOutcome] -> Maybe SkillTestInfo -> [UI Message] -> Int
+decideCommit outcomes mSti cs = case mSti of
   Nothing -> startIdx
   Just sti -> case stiDifficulty sti of
     Nothing -> startIdx
     Just d
-      | stiCurrent sti >= d + commitBuffer -> startIdx
+      -- Odds known and already at/over the bar (else the coarse buffer rule):
+      -- bank the test and keep key cards. The buffer is also a FLOOR in the
+      -- odds case: once the committed total clears difficulty by 'commitBuffer'
+      -- we stop, so a test whose ceiling is below 'commitOddsThreshold' (a hard
+      -- bag) banks a reasonable margin instead of dumping the whole hand chasing
+      -- an unreachable 75%.
+      | maybe
+          (stiCurrent sti >= d + commitBuffer)
+          (\p -> p >= commitOddsThreshold || stiCurrent sti >= d + commitBuffer)
+          (passOdds outcomes (stiCurrent sti) d) ->
+          startIdx
       | otherwise ->
           let commits =
                 [ (i, matchIconValue (stiMatchingIcons sti) card)
@@ -924,12 +1622,54 @@ firstSelectable cs = maybe 0 fst (listToMaybe [(i, ui) | (i, ui) <- withIndex cs
 firstStop :: [UI Message] -> Maybe Int
 firstStop cs = listToMaybe [i | (i, ui) <- withIndex cs, uiIsStop ui]
 
+{- | The generic argmax ranking over the selectable choices, returning an index
+into @cs@. This is the ONLY ranking the learned model replaces: when
+'activeLinearModel' is a 'Just' (the @ARKHAM_AI_USE_MODEL@ flag is on AND a
+non-empty model is embedded) the seat ranks by 'learnedScore' instead of the
+hand-tuned 'scoreChoice'; otherwise (the default) it runs the heuristic path
+below unchanged, byte-for-byte. Either way it ranks over the SAME
+@isSelectable@ choices and falls back to index @0@ when none is selectable, so
+the engine index invariant and always-legal fallback hold identically. The
+special-case handlers (commit window, damage\/slot-discard, amounts) live in
+'buildAnswer' \/ 'chooseIndexFor' and are untouched by the model.
+-}
 bestByScore :: AiSituation -> [UI Message] -> Int
-bestByScore sit cs = case maxesBy snd scored of
-  ((i, _) : _) -> i
-  [] -> 0
+bestByScore sit cs = case activeLinearModel of
+  Just m -> argmaxFirst [(i, learnedScore m sit ui) | (i, ui) <- selectable]
+  Nothing -> case maxesBy snd scored of
+    ((i, _) : _) -> i
+    [] -> 0
  where
-  scored = [(i, scoreChoice sit ui) | (i, ui) <- withIndex cs, isSelectable ui]
+  selectable = [(i, ui) | (i, ui) <- withIndex cs, isSelectable ui]
+  raw = [(i, ui, scoreChoice sit ui) | (i, ui) <- selectable]
+  -- Last-action economy gate: on our final action, don't spend it taking
+  -- resources or drawing when a genuinely productive action is available
+  -- (scores > the end-turn baseline). Off the last action, or when nothing
+  -- productive is on offer, economy keeps its normal value.
+  lastActionProductive =
+    aiRemainingActions sit <= 1
+      && any (\(_, ui, s) -> s > 1 && not (isEconomyChoice ui) && not (uiIsStop ui)) raw
+  scored =
+    [ (i, if lastActionProductive && isEconomyChoice ui then min s 0 else s)
+    | (i, ui, s) <- raw
+    ]
+
+{- | Argmax over @(index, score)@ pairs returning the index of the highest score,
+ties broken to the lowest index (first in list order) — matching the heuristic
+path's @'maxesBy' snd@-then-@head@, whose stable sort keeps the earliest-listed
+choice among equal maxima. Returns @0@ for an empty list. A strict left fold (not
+the partial ClassyPrelude 'maximum', which is 'Int'-typed via 'maxesBy' anyway
+and cannot rank these 'Double' scores).
+-}
+argmaxFirst :: [(Int, Double)] -> Int
+argmaxFirst = \case
+  [] -> 0
+  (p : ps) -> fst (foldl' keepBetter p ps)
+ where
+  -- Strict @>@: a later choice must STRICTLY beat the incumbent to win, so the
+  -- earliest-listed choice survives a tie (lowest index), as above.
+  keepBetter best@(_, bestScore) cur@(_, curScore) =
+    if curScore > bestScore then cur else best
 
 -- * Choice scoring
 
@@ -968,19 +1708,317 @@ focusWeightBonus weights f =
       maxW = foldl' max 1 (Map.elems weights)
    in (w * focusBonusCap) `div` maxW
 
+-- * Odds-to-score mapping (chaos-bag probability → kind-score weight)
+
+{- | The base weight a fully-favourable (P=1) fight\/investigate odds term earns
+before the high-odds kicker: a coin-flip (P≈0.5) reads as ~4 and a long shot
+(P≈0.15) as ~1, sitting in the same band as the kind bases.
+-}
+oddsScale :: Int
+oddsScale = 8
+
+{- | The (smaller) odds scale used for evading, so a favourable evade stays a
+touch under a favourable fight (≤ ~10 vs ≤ ~12), preserving the prior ordering
+where fighting edged out evading.
+-}
+evadeOddsScale :: Int
+evadeOddsScale = 6
+
+{- | The pass probability at or above which a test counts as a strong play and
+earns 'highOddsKicker' on top of the scaled odds. The user's rule: "if it can get
+75%+ without committing, weight that highly."
+-}
+highOddsThreshold :: Double
+highOddsThreshold = 0.75
+
+-- | The flat bonus a high-odds (>= 'highOddsThreshold') test earns on top of the scaled odds.
+highOddsKicker :: Int
+highOddsKicker = 4
+
+{- | Map known odds to a kind-score weight at a given scale: @round (p * scale)@
+plus 'highOddsKicker' once @p >= 'highOddsThreshold'@. Unknown odds ('Nothing',
+i.e. an empty bag) fall back to the supplied coarse value, so pre-scenario / no-bag
+scoring is unchanged. So at the full 'oddsScale': >=75% reads ~10–12, a coin-flip
+~4, a long shot ~1–2.
+-}
+oddsScoreWith :: Int -> Maybe Double -> Int -> Int
+oddsScoreWith scale modds fallback =
+  maybe
+    fallback
+    (\p -> round (p * fromIntegral scale) + if p >= highOddsThreshold then highOddsKicker else 0)
+    modds
+
+{- | The shared fight\/investigate odds→score mapper at the full 'oddsScale' (the
+brief's @oddsScore@): @maybe fallback (\\p -> round (p * oddsScale) + kicker) modds@.
+-}
+oddsScore :: Maybe Double -> Int -> Int
+oddsScore = oddsScoreWith oddsScale
+
+-- * Scoring helpers & tunables (clue / weapon / doom / safety awareness)
+
+{- | The keep value of a non-weapon asset for the slot-discard ranking: a fixed
+mid value that sits at\/above a base weapon so a worse weapon is dropped first,
+while a slightly-better weapon outranks it. Weapons are valued by their tagged
+per-attack 'abDamage' instead.
+-}
+nonWeaponQuality :: Int
+nonWeaponQuality = 2
+
+{- | The most damage a single asset's tagged weapon Fight ability deals per attack
+('abDamage', which already includes the base 1), or 'Nothing' when the asset has
+no damage-tagged ability (a non-weapon, or an untagged one).
+-}
+weaponDamageOf :: Card -> Maybe Int
+weaponDamageOf card =
+  case [d | Just tag <- [lookupCardTag (toCardCode card)], ab <- Map.elems (ctAbilities tag), Just d <- [abDamage ab]] of
+    [] -> Nothing
+    ds -> Just (foldl' max 1 ds)
+
+{- | The card a turn-menu play choice would play, or 'Nothing' for a non-play
+choice. Mirrors the 'classifyUI' play-card shape so the redundancy penalty sees
+the same card.
+-}
+playedCard :: UI Message -> Maybe Card
+playedCard = \case
+  TargetLabel (CardIdTarget _) (InitiatePlayCardWithWindows _ card _ _ _ _ : _) -> Just card
+  _ -> Nothing
+
+{- | Whether playing @card@ is a redundant or strictly-worse weapon: we already
+field a weapon, @card@ has the Weapon trait, and its per-attack damage does not
+exceed our best controlled weapon. An untagged weapon is treated as base damage
+(so it is considered redundant against any controlled weapon).
+-}
+isRedundantWeapon :: AiSituation -> Card -> Bool
+isRedundantWeapon sit card =
+  aiControlsWeapon sit
+    && member Weapon (cdCardTraits (toCardDef card))
+    && fromMaybe 1 (weaponDamageOf card) <= aiBestWeaponDamage sit
+
+-- | The group already holds enough clues to satisfy the clue-spend objective.
+cluesAlreadyGathered :: AiSituation -> Bool
+cluesAlreadyGathered sit = maybe False (aiGroupClues sit >=) (aiClueTarget sit)
+
+-- | The current act is a clue-spend objective the group still needs clues for.
+objectiveWantsClues :: AiSituation -> Bool
+objectiveWantsClues sit = maybe False (aiGroupClues sit <) (aiClueTarget sit)
+
+-- | Whether a choice is an economy action (take resources / draw a card).
+isEconomyChoice :: UI Message -> Bool
+isEconomyChoice = \case
+  ResourceLabel _ _ -> True
+  ComponentLabel (InvestigatorDeckComponent _) _ -> True
+  _ -> False
+
+{- | How far below ending the turn a redundant weapon play is pushed (well below
+0 so any real action, and even @EndTurn@, outranks it).
+-}
+redundantWeaponPenalty :: Int
+redundantWeaponPenalty = -100
+
+{- | How far a pure resource-gain card play (role @"economy"@, e.g. Emergency
+Cache) is pushed down when resources are not the bottleneck — below drawing (2–5)
+so an idle seat digs for answers instead of hoarding resources it cannot spend.
+Consumed by 'idleEconomyPenalty' in 'scoreChoice'.
+-}
+idleEconomyCardPenalty :: Int
+idleEconomyCardPenalty = -10
+
+{- | How hard the weakness draw-risk pushes the draw score down: the draw score
+loses @round ('aiWeaknessDrawRisk' * 'weaknessDrawPenaltyScale')@ (floored at 0),
+so a deck that is, say, a third weaknesses knocks ~4 off drawing — enough to make
+the seat wary of drawing into its own weakness.
+-}
+weaknessDrawPenaltyScale :: Int
+weaknessDrawPenaltyScale = 12
+
+-- | Doom fraction (current doom / agenda threshold) at which objective focus kicks in.
+doomPressureThreshold :: Double
+doomPressureThreshold = 0.6
+
+{- | The doom-pressure act-push scales with how close the agenda is: an
+objective-aligned action earns @round ('aiDoomPressure' * 'doomPressureScale')@,
+capped at 'doomPressureBumpCap', so the closer the agenda the stronger the push.
+-}
+doomPressureScale :: Int
+doomPressureScale = 8
+
+-- | The ceiling on the scaled doom-pressure act-push.
+doomPressureBumpCap :: Int
+doomPressureBumpCap = 10
+
+-- | Remaining-health (or sanity) at or below which self-preservation engages.
+lowHealthThreshold :: Int
+lowHealthThreshold = 2
+
+{- | The conservative nudge self-preservation applies: it lowers a dangerous
+fight and raises an evade by this much.
+-}
+selfPreservationDelta :: Int
+selfPreservationDelta = 4
+
+-- * Teammate-aware coordination (bounded nudges, never vetoes)
+
+{- | How far a Fight is nudged down when a /co-engaged/ teammate can already
+finish that enemy soon (so the seat does something else). Modest: a clean
+finisher (combat term up to ~28) still wins, and a directive ('aiPrioritySet')
+suppresses it entirely. Subtracted in 'scoreChoice'.
+-}
+teammateHandledPenalty :: Int
+teammateHandledPenalty = 6
+
+{- | How far an Investigate is nudged down when a co-located, clearly-better
+investigator should take the (one-or-fewer) clue here instead. Subtracted in
+'scoreChoice'.
+-}
+investigateDeferralPenalty :: Int
+investigateDeferralPenalty = 10
+
+{- | A small POSITIVE nudge for rescuing a teammate: a Fight on an enemy a
+teammate is engaged with but /cannot/ finish themselves, that the seat can
+meaningfully damage. Bounded well under a directive so it only re-ranks
+already-legal fights. Added in 'scoreChoice'.
+-}
+rescueBonus :: Int
+rescueBonus = 4
+
+{- | Up to how many clues a stronger co-located investigator is assumed able to
+clear on their own this turn — at or below this the weaker seat defers the
+location to them (a fuller location needs everyone digging). -}
+deferClueCoverage :: Int
+deferClueCoverage = 3
+
+{- | The small (≤4) specialty bump/malus that divides labor in a mixed party: a
+combat-specialty seat leans into fighting (and off investigating) when the party
+holds a stronger investigator, and a clue-specialty seat the reverse when it
+holds a stronger fighter. Bounded well under the kind\/finisher scores so live
+tactical signals still dominate.
+-}
+specialtyDivisionDelta :: Int
+specialtyDivisionDelta = 3
+
+-- | The seat's intrinsic specialty focus (its profile\/deck focus, not the
+-- act-blended active focus). Used to divide labor across a mixed party.
+seatSpecialty :: AiSituation -> Focus
+seatSpecialty sit = profileFocus (aiState sit) (aiStats sit)
+
+{- | Whether a teammate out-investigates the seat: strictly higher modified
+intellect, or an investigate deck focus where the seat's own specialty is not
+investigate.
+-}
+outInvestigatesSeat :: AiSituation -> TeammateInfo -> Bool
+outInvestigatesSeat sit tm =
+  tmIntellect tm > myIntellect
+    || (tmDeckFocus tm == Just InvestigateFocus && seatSpecialty sit /= InvestigateFocus)
+ where
+  myIntellect = maybe 0 (`statsSkillValue` SkillIntellect) (aiStats sit)
+
+{- | Whether some teammate /co-located with the seat/ out-investigates it (nudge
+2). 'False' when the seat is off the map, so we never defer a clue to a teammate
+we are not actually standing with.
+-}
+betterInvestigatorColocated :: AiSituation -> Bool
+betterInvestigatorColocated sit = case aiLocation sit of
+  Nothing -> False
+  here -> any (\tm -> tmLocation tm == here && outInvestigatesSeat sit tm) (aiTeammates sit)
+
+-- | Whether the party (anywhere) holds an investigator stronger than the seat.
+partyHasStrongerInvestigator :: AiSituation -> Bool
+partyHasStrongerInvestigator sit = any (outInvestigatesSeat sit) (aiTeammates sit)
+
+-- | Whether the party (anywhere) holds a fighter with strictly higher combat.
+partyHasStrongerFighter :: AiSituation -> Bool
+partyHasStrongerFighter sit = any ((> myCombat) . tmCombat) (aiTeammates sit)
+ where
+  myCombat = maybe 0 (`statsSkillValue` SkillCombat) (aiStats sit)
+
+{- | Whether some teammate /engaged with this enemy/ can defeat it within roughly
+two turns: their combat clears its fight value (an unknown fight is treated as
+reachable) and twice their best per-attack weapon damage covers its remaining
+health. 'False' for an enemy with no damage-killable health (so we never treat a
+non-damage enemy as "handled"), and 'False' when no teammate is engaged with it
+(a teammate engaged but unable to finish it is /not/ counted, since helping is
+good). Used by nudge 1.
+-}
+teammateCanHandleEnemy :: AiSituation -> EnemyId -> Bool
+teammateCanHandleEnemy sit eid = fromMaybe False $ do
+  info <- Map.lookup eid (aiEnemies sit)
+  rh <- eiRemainingHealth info
+  pure $ any (canHandle (eiFight info) rh) (aiTeammates sit)
+ where
+  canHandle mFight rh tm =
+    eid `elem` tmEngaged tm
+      && maybe True (tmCombat tm >=) mFight
+      && tmWeaponDamage tm * 2 >= rh
+
+{- | Whether some teammate is engaged with this enemy but the party engaged with
+it /cannot/ finish it soon (the inverse of 'teammateCanHandleEnemy', given an
+engaged teammate). Marks an enemy a teammate is stuck on and would welcome help
+clearing. Used by the rescue nudge.
+-}
+teammateEngagedButStuck :: AiSituation -> EnemyId -> Bool
+teammateEngagedButStuck sit eid =
+  any (\tm -> eid `elem` tmEngaged tm) (aiTeammates sit)
+    && not (teammateCanHandleEnemy sit eid)
+
+{- | Whether the seat can meaningfully damage this enemy: it has damage-killable
+health and the seat's modified combat clears its fight value (an unknown fight is
+treated as reachable; the seat's weapon always deals at least the unarmed 1).
+-}
+seatCanDamageEnemy :: AiSituation -> EnemyId -> Bool
+seatCanDamageEnemy sit eid = fromMaybe False $ do
+  info <- Map.lookup eid (aiEnemies sit)
+  _ <- eiRemainingHealth info -- damage-killable only
+  let myCombat = maybe 0 (`statsSkillValue` SkillCombat) (aiStats sit)
+  pure (maybe True (myCombat >=) (eiFight info))
+
 {- | Score a single choice for the current situation; higher is more attractive.
 Pure and deterministic so it can be unit-tested with synthetic choices. The
 weights are coarse v1 heuristics to be tuned with play data, not a solved
 policy.
+
+The numeric output is, /by construction/, the sum of the named additive terms
+'scoreBreakdown' exposes — so the two never diverge and the scorer the AI runs
+is exactly the scorer the ML pipeline distils against. Behaviour is unchanged
+from the prior single-expression definition (the same ten terms, same order).
 -}
 scoreChoice :: AiSituation -> UI Message -> Int
-scoreChoice sit ui = priorityScore + kindScore + stopScore + locationScore + economyScore
+scoreChoice sit ui = sum (map snd (scoreBreakdown sit ui))
+
+{- | The ten named additive terms 'scoreChoice' sums, in scoring order:
+@priorityScore@, @kindScore@, @stopScore@, @locationScore@, @economyScore@,
+@redundancyPenalty@, @idleEconomyPenalty@, @doomBump@, @safetyAdjust@,
+@teammateAdjust@.
+
+This is the single source of truth for the score: @scoreChoice sit ui == sum
+(map snd (scoreBreakdown sit ui))@. It exists so the same per-choice
+sub-computations feed three consumers without divergence — the live scorer
+('scoreChoice' \/ 'bestByScore'), the coarse interpretable features in the
+ML vector ('choiceFeatures'), and a linear-distillation target. The key set
+and order are stable (always these ten labels), so it can back a dataset
+column set directly.
+-}
+scoreBreakdown :: AiSituation -> UI Message -> [(Text, Int)]
+scoreBreakdown sit ui =
+  [ ("priorityScore", priorityScore)
+  , ("kindScore", kindScore)
+  , ("stopScore", stopScore)
+  , ("locationScore", locationScore)
+  , ("economyScore", economyScore)
+  , ("redundancyPenalty", redundancyPenalty)
+  , ("idleEconomyPenalty", idleEconomyPenalty)
+  , ("doomBump", doomBump)
+  , ("safetyAdjust", safetyAdjust)
+  , ("teammateAdjust", teammateAdjust)
+  ]
  where
   skill s = (\st -> statsSkillValue st s) <$> aiStats sit
+  kind = classifyUI ui
   -- Proportional focus term (replaces the old binary align bonus): a choice's
   -- focus earns up to 'focusBonusCap', scaled by how heavily that focus is
   -- weighted in the blend.
   focusBonus = focusWeightBonus (aiFocusWeights sit)
+  -- The agenda is closing in: lean into the act objective, drop economy.
+  underDoomPressure = aiDoomPressure sit >= doomPressureThreshold
 
   priorityScore = case uiTarget ui of
     Just t | t `elem` aiPrioritySet sit -> priorityBonus
@@ -991,13 +2029,131 @@ scoreChoice sit ui = priorityScore + kindScore + stopScore + locationScore + eco
   -- card (5), is mild card advantage otherwise (2), and is never worth filling
   -- the hand into a discard (0). Both stay <= 6 so any viable productive action
   -- (8+) outranks them, and both beat ending the turn (1) when they make
-  -- progress.
-  economyScore = case ui of
-    ResourceLabel _ _ -> if aiResourceShortfall sit > 0 then 6 else 0
-    ComponentLabel (InvestigatorDeckComponent _) _
-      | not (aiHandNotFull sit) -> 0
-      | aiShouldDig sit -> 5
-      | otherwise -> 2
+  -- progress. Under doom pressure economy is suppressed entirely.
+  economyScore
+    | underDoomPressure = 0
+    | otherwise = case ui of
+        ResourceLabel _ _ -> if aiResourceShortfall sit > 0 then 6 else 0
+        -- Drawing also weighs the weakness draw-risk: the closer the deck is to a
+        -- weakness on top, the lower the draw score (floored at 0).
+        ComponentLabel (InvestigatorDeckComponent _) _
+          | not (aiHandNotFull sit) -> 0
+          | aiShouldDig sit -> max 0 (5 - weaknessDrawPenalty)
+          | otherwise -> max 0 (2 - weaknessDrawPenalty)
+        _ -> 0
+  weaknessDrawPenalty = round (aiWeaknessDrawRisk sit * fromIntegral weaknessDrawPenaltyScale)
+
+  -- Don't trade down weapons (area 2): a Weapon hand-card whose tagged per-attack
+  -- damage does not beat our best controlled weapon, while we already field one,
+  -- is pushed below ending the turn so the seat keeps the .38 instead of playing
+  -- a Knife. A strictly better weapon (more damage) is an upgrade and untouched.
+  redundancyPenalty = case playedCard ui of
+    Just card | isRedundantWeapon sit card -> redundantWeaponPenalty
+    _ -> 0
+
+  -- Don't burn a card on resources we don't need: a pure resource-gain card
+  -- (role @"economy"@, e.g. Emergency Cache) is pushed below drawing when there
+  -- is no concrete unaffordable aligned card (@aiResourceShortfall <= 0@), so an
+  -- idle seat digs for answers instead of hoarding.
+  idleEconomyPenalty = case playedCard ui of
+    Just card
+      | aiResourceShortfall sit <= 0
+      , Just tag <- lookupCardTag (toCardCode card)
+      , ctRole tag == Just "economy" ->
+          idleEconomyCardPenalty
+    _ -> 0
+
+  -- Doom pressure (area 3): bump fighting the act's defeat-enemy target and
+  -- gathering its clues, so the seat closes out the objective before the agenda.
+  doomBump
+    | not underDoomPressure = 0
+    | otherwise = case kind of
+        FightChoice (Just eid) | Just eid == aiObjectiveEnemy sit -> scaledDoomBump
+        InvestigateChoice | objectiveWantsClues sit -> scaledDoomBump
+        _ -> 0
+  -- Scale the act-push with how close the agenda is, capped at
+  -- 'doomPressureBumpCap' so it never eclipses a finisher or a directive.
+  scaledDoomBump = min doomPressureBumpCap (round (aiDoomPressure sit * fromIntegral doomPressureScale))
+
+  -- Self-preservation (area 3): at low remaining health, ease off attacking a
+  -- dangerous enemy we cannot finish; favour slipping away when health OR sanity
+  -- is low. Conservative — a clean finisher's combat bonus still wins.
+  safetyAdjust = case kind of
+    FightChoice (Just eid) | lowHealth && isDangerous eid -> negate selfPreservationDelta
+    EvadeChoice _ | lowVitality -> selfPreservationDelta
+    _ -> 0
+   where
+    lowHealth = aiRemainingHealth sit <= lowHealthThreshold
+    lowVitality = lowHealth || aiRemainingSanity sit <= lowHealthThreshold
+    -- Dangerous: an enemy we are engaged with whose attack could defeat us and
+    -- that we cannot one-shot this attack (so fighting it leaves us exposed).
+    isDangerous eid = fromMaybe False $ do
+      info <- Map.lookup eid (aiEnemies sit)
+      let engagedHere = eid `elem` aiEngaged sit
+          couldDefeatUs = eiAttackDamage info >= aiRemainingHealth sit
+          cannotFinish = maybe True (> aiBestWeaponDamage sit) (eiRemainingHealth info)
+      pure (engagedHere && couldDefeatUs && cannotFinish)
+
+  -- Teammate-aware coordination: three bounded nudges that divide labor across
+  -- the party. ALL are gated on there being teammates, so with an empty
+  -- 'aiTeammates' (solo / single-AI game) this term is exactly 0 and the policy
+  -- is byte-for-byte the pre-teammate behavior. None of them can resurrect an
+  -- illegal action or beat a directive — they only re-rank already-legal choices.
+  teammateAdjust
+    | null (aiTeammates sit) = 0
+    | otherwise = handledOff + investigateDefer + specialtyDivide + rescueHelp
+
+  -- (1) Don't pile onto an enemy a co-engaged teammate can already finish soon,
+  -- UNLESS it is a directive target (a priority overrides). A teammate engaged
+  -- but unable to finish it is not counted, so genuinely helping is never
+  -- penalized.
+  handledOff = case kind of
+    FightChoice (Just eid)
+      | EnemyTarget eid `notElem` aiPrioritySet sit
+      , teammateCanHandleEnemy sit eid ->
+          negate teammateHandledPenalty
+    _ -> 0
+
+  -- (2) Role-aware investigate deferral: when a co-located, clearly-better
+  -- investigator is here and they can plausibly clear the clues themselves
+  -- ('deferClueCoverage'), let them take the location and do something else —
+  -- a weak-intellect combat seat shouldn't grind marginal-odds investigates next
+  -- to a seeker. The strongest investigator present is unaffected, and a clue-rich
+  -- location (above the coverage cap) still wants everyone digging.
+  investigateDefer = case kind of
+    InvestigateChoice
+      | aiLocationClues sit <= deferClueCoverage
+      , betterInvestigatorColocated sit ->
+          negate investigateDeferralPenalty
+    _ -> 0
+
+  -- (3) Specialty division of labor: a combat-specialty seat leans into fighting
+  -- and off investigating when the party fields a stronger investigator; a
+  -- clue-specialty seat does the reverse when the party fields a stronger
+  -- fighter. Kept to ±'specialtyDivisionDelta' so tactical signals dominate.
+  specialtyDivide = case seatSpecialty sit of
+    CombatFocus
+      | partyHasStrongerInvestigator sit -> case kind of
+          FightChoice _ -> specialtyDivisionDelta
+          InvestigateChoice -> negate specialtyDivisionDelta
+          _ -> 0
+    InvestigateFocus
+      | partyHasStrongerFighter sit -> case kind of
+          InvestigateChoice -> specialtyDivisionDelta
+          FightChoice _ -> negate specialtyDivisionDelta
+          _ -> 0
+    _ -> 0
+
+  -- (4) Rescue reward: a Fight on an enemy a teammate is engaged with but cannot
+  -- finish themselves, that the seat can meaningfully damage. The existing
+  -- 'handledOff' only penalizes piling onto an enemy a teammate CAN finish; this
+  -- rewards the opposite — going to help where a teammate is stuck. Bounded to
+  -- +'rescueBonus' so it only re-ranks legal fights and never overrides a directive.
+  rescueHelp = case kind of
+    FightChoice (Just eid)
+      | teammateEngagedButStuck sit eid
+      , seatCanDamageEnemy sit eid ->
+          rescueBonus
     _ -> 0
 
   -- "Stop" baselines: skipping a reaction is neutral-ish (5); ending the turn
@@ -1019,7 +2175,7 @@ scoreChoice sit ui = priorityScore + kindScore + stopScore + locationScore + eco
           Nothing -> 0
     _ -> 0
 
-  kindScore = case classifyUI ui of
+  kindScore = case kind of
     FightChoice meid -> 4 + focusBonus CombatFocus + maybe 0 combatBonus meid
     EvadeChoice meid -> 2 + focusBonus EvadeFocus + maybe 0 evadeBonus meid
     InvestigateChoice -> case investigateBonus of
@@ -1037,10 +2193,14 @@ scoreChoice sit ui = priorityScore + kindScore + stopScore + locationScore + eco
   combatBonus eid = fromMaybe 0 $ do
     info <- Map.lookup eid (aiEnemies sit)
     let toHit = case (skill SkillCombat, eiFight info) of
-          (Just c, Just f)
-            | c >= f -> 8
-            | c + 1 >= f -> 4
-            | otherwise -> 0
+          (Just c, Just f) ->
+            -- Odds-based to-hit; falls back to the prior coarse c>=f ? 8 : c+1>=f ? 4 : 0
+            -- when the bag is empty (no scenario). The kill-range 'finish' is unchanged.
+            let toHitFallback
+                  | c >= f = 8
+                  | c + 1 >= f = 4
+                  | otherwise = 0
+             in oddsScore (passOdds (aiBagOutcomes sit) c f) toHitFallback
           _ -> 0
         finish = case eiRemainingHealth info of
           Just rh
@@ -1053,18 +2213,242 @@ scoreChoice sit ui = priorityScore + kindScore + stopScore + locationScore + eco
   evadeBonus eid = fromMaybe 0 $ do
     info <- Map.lookup eid (aiEnemies sit)
     case (skill SkillAgility, eiEvade info) of
-      (Just a, Just e) | a >= e -> pure 6
+      (Just a, Just e) ->
+        -- Odds-based at the smaller 'evadeOddsScale' so evade stays a touch under
+        -- fight; falls back to the prior flat 6 (for a>=e) when the bag is empty.
+        pure (oddsScoreWith evadeOddsScale (passOdds (aiBagOutcomes sit) a e) (if a >= e then 6 else 0))
       _ -> pure 0
 
   -- Only an action-investigate is gated on there being clues here; reaction
   -- abilities that grant clues are handled as 'FocusedChoice' (see classifyUI).
+  -- Once the group already holds enough clues for the spend objective, stop
+  -- over-investigating (the goal is now to be at the spend location).
   investigateBonus
+    | cluesAlreadyGathered sit = 0
     | aiLocationClues sit <= 0 = 0
     | otherwise = case (skill SkillIntellect, aiLocationShroud sit) of
-        (Just i, Just sh)
-          | i >= sh -> 8
-          | otherwise -> 3
+        (Just i, Just sh) ->
+          -- Odds-based; falls back to the prior coarse i>=sh ? 8 : 3 when the bag is empty.
+          oddsScore (passOdds (aiBagOutcomes sit) i sh) (if i >= sh then 8 else 3)
         _ -> 4
+
+-- * ML feature extraction (shared by training-data extraction and inference)
+
+{- | A stable, lowercase key fragment for a 'Focus', used in feature names. Kept
+deliberately /independent/ of the JSON wire key ('Arkham.Ai.Focus.focusKey') so
+the ML schema can never silently drift if the on-wire format is ever renamed:
+this mapping is owned by the feature schema and must stay fixed. The values
+happen to coincide with the wire key today; that is a convenience, not a
+coupling.
+-}
+focusFeatureName :: Focus -> Text
+focusFeatureName = \case
+  CombatFocus -> "combat"
+  InvestigateFocus -> "investigate"
+  EvadeFocus -> "evade"
+  SupportFocus -> "support"
+  SurvivalFocus -> "survival"
+  MobilityFocus -> "mobility"
+
+{- | A stable, lowercase key fragment for a 'ChoiceKind', used in the @ch.kind.*@
+one-hot. Total over the seven constructors.
+-}
+choiceKindName :: ChoiceKind -> Text
+choiceKindName = \case
+  FightChoice _ -> "fight"
+  EvadeChoice _ -> "evade"
+  InvestigateChoice -> "investigate"
+  MoveChoice -> "move"
+  PlayCardChoice _ -> "playCard"
+  FocusedChoice _ -> "focused"
+  PlainChoice -> "plain"
+
+{- | All 'ChoiceKind' key fragments in the fixed one-hot order used by
+'choiceFeatures' (constructor order). The full key set is locked, so this list
+must not be reordered.
+-}
+allChoiceKindNames :: [Text]
+allChoiceKindNames = ["fight", "evade", "investigate", "move", "playCard", "focused", "plain"]
+
+-- | 0\/1 indicator as a 'Double', for one-hot and boolean features.
+indicator :: Bool -> Double
+indicator b = if b then 1 else 0
+
+{- | Chaos-bag summary over the resolved 'aiBagOutcomes': the fraction that are
+'OutcomeFail', the fraction that are 'OutcomeSucceed', and the mean of the
+'OutcomeMod' values (mean taken over the modifier tokens only). All three are 0
+when the bag is empty, and the mean is 0 when there are no modifier tokens. Uses
+strict 'foldl''-style sums, never the partial ClassyPrelude 'maximum'\/'minimum'.
+-}
+bagOutcomeSummary :: [TokenOutcome] -> (Double, Double, Double)
+bagOutcomeSummary outcomes =
+  let total = length outcomes
+      frac n = if total == 0 then 0 else fromIntegral n / fromIntegral total
+      nFail = foldl' (\acc o -> if o == OutcomeFail then acc + 1 else acc) (0 :: Int) outcomes
+      nSucceed = foldl' (\acc o -> if o == OutcomeSucceed then acc + 1 else acc) (0 :: Int) outcomes
+      mods = [m | OutcomeMod m <- outcomes]
+      meanMod = case mods of
+        [] -> 0
+        _ -> fromIntegral (foldl' (+) (0 :: Int) mods) / fromIntegral (length mods)
+   in (frac nFail, frac nSucceed, meanMod)
+
+{- | A dense, stably-keyed feature vector for one @(situation, choice)@ pair,
+used /identically/ at training-data extraction and at inference, so there is no
+train\/serve skew — both call this one function, and the @ch.*@ block is derived
+through the very helpers 'scoreChoice' uses ('classifyUI', 'passOdds',
+'isEconomyChoice', 'uiIsStop', 'isRedundantWeapon', 'uiTarget', 'playedCard'), so
+a feature and the score it explains can never diverge.
+
+EVERY key is emitted for EVERY choice — features that do not apply to a choice's
+kind are 0 — so the column set is fixed and the dataset stays rectangular.
+Ordering is stable. Two greppable blocks:
+
+  * @sit.*@ — read straight off the 'AiSituation': the 'aiActiveFocus' one-hot,
+    the six 'aiFocusWeights', the scalar situation reads, the four 'aiStats'
+    skills, the chaos-bag summary, and enemy\/teammate aggregates.
+  * @ch.*@ — the 'ChoiceKind' one-hot plus per-choice flags and odds.
+-}
+{- | Score a choice with the distilled standardized linear model (see
+'Arkham.Ai.Model'). For each feature 'choiceFeatures' emits, standardize its
+value @(v - mu) \/ sd@ and weight it by the model coefficient, summing only the
+features the model actually weights (@coef \/= 0@). Missing @mu@\/@sd@ default to
+@0@\/@1@ and @sd@ is floored at @1e-9@ to avoid a divide-by-zero on a degenerate
+(constant) feature. Reuses 'choiceFeatures' verbatim so training and inference
+see identical features; 'scoreChoice' \/ 'scoreBreakdown' are untouched.
+-}
+learnedScore :: LinearModel -> AiSituation -> UI Message -> Double
+learnedScore m sit ui =
+  sum
+    [ ((v - mu) / sd) * coef
+    | (k, v) <- choiceFeatures sit ui
+    , let coef = Map.findWithDefault 0 k (lmCoef m)
+    , coef /= 0
+    , let mu = Map.findWithDefault 0 k (lmMu m)
+    , let sd = max 1e-9 (Map.findWithDefault 1 k (lmSd m))
+    ]
+
+{- | The interpretable per-(situation, choice) feature vector (67 stable keys):
+the situation block ('situationFeatures') concatenated with the per-choice block
+('choiceFeaturesBlock'). The single source of truth for BOTH the offline trainer
+(@ml/train.py@) and the inference-time 'learnedScore', so the distilled model
+sees exactly the features it was trained on.
+-}
+choiceFeatures :: AiSituation -> UI Message -> [(Text, Double)]
+choiceFeatures sit ui = situationFeatures <> choiceFeaturesBlock
+ where
+  seatSkillValue s = maybe 0 (`statsSkillValue` s) (aiStats sit)
+  (bagFail, bagSucceed, bagMeanMod) = bagOutcomeSummary (aiBagOutcomes sit)
+  enemyInfos = Map.elems (aiEnemies sit)
+  enemyHealths = mapMaybe eiRemainingHealth enemyInfos
+  minEnemyHealth = case enemyHealths of
+    [] -> 0
+    (x : xs) -> foldl' min x xs
+  myIntellect = seatSkillValue SkillIntellect
+
+  situationFeatures =
+    [ ("sit.focus." <> focusFeatureName f, indicator (aiActiveFocus sit == f))
+    | f <- allFoci
+    ]
+      <> [ ("sit.weight." <> focusFeatureName f, fromIntegral (Map.findWithDefault 0 f (aiFocusWeights sit)))
+         | f <- allFoci
+         ]
+      <> [ ("sit.resources", fromIntegral (aiResources sit))
+         , ("sit.remainingActions", fromIntegral (aiRemainingActions sit))
+         , ("sit.locationClues", fromIntegral (aiLocationClues sit))
+         , ("sit.locationShroud", fromIntegral (fromMaybe 0 (aiLocationShroud sit)))
+         , ("sit.doomPressure", aiDoomPressure sit)
+         , ("sit.remainingHealth", fromIntegral (aiRemainingHealth sit))
+         , ("sit.remainingSanity", fromIntegral (aiRemainingSanity sit))
+         , ("sit.groupClues", fromIntegral (aiGroupClues sit))
+         , ("sit.clueTarget", fromIntegral (fromMaybe 0 (aiClueTarget sit)))
+         , ("sit.hasClueTarget", indicator (isJust (aiClueTarget sit)))
+         , ("sit.resourceShortfall", fromIntegral (aiResourceShortfall sit))
+         , ("sit.weaknessDrawRisk", aiWeaknessDrawRisk sit)
+         , ("sit.bestWeaponDamage", fromIntegral (aiBestWeaponDamage sit))
+         , ("sit.shouldDig", indicator (aiShouldDig sit))
+         , ("sit.handNotFull", indicator (aiHandNotFull sit))
+         , ("sit.controlsWeapon", indicator (aiControlsWeapon sit))
+         , ("sit.stat.willpower", fromIntegral (seatSkillValue SkillWillpower))
+         , ("sit.stat.intellect", fromIntegral (seatSkillValue SkillIntellect))
+         , ("sit.stat.combat", fromIntegral (seatSkillValue SkillCombat))
+         , ("sit.stat.agility", fromIntegral (seatSkillValue SkillAgility))
+         , ("sit.bagFail", bagFail)
+         , ("sit.bagSucceed", bagSucceed)
+         , ("sit.bagMeanMod", bagMeanMod)
+         , ("sit.nEngaged", fromIntegral (length (aiEngaged sit)))
+         , ("sit.nEnemies", fromIntegral (Map.size (aiEnemies sit)))
+         , ("sit.minEnemyRemainingHealth", fromIntegral minEnemyHealth)
+         , ("sit.anyInKillRange", indicator (any (maybe False (<= aiBestWeaponDamage sit) . eiRemainingHealth) enemyInfos))
+         , ("sit.nTeammates", fromIntegral (length (aiTeammates sit)))
+         , ("sit.maxTmCombat", fromIntegral (foldl' max 0 (map tmCombat (aiTeammates sit))))
+         , ("sit.maxTmIntellect", fromIntegral (foldl' max 0 (map tmIntellect (aiTeammates sit))))
+         , ("sit.strongerInvestigator", indicator (any ((> myIntellect) . tmIntellect) (aiTeammates sit)))
+         ]
+
+  kind = classifyUI ui
+  mTarget = uiTarget ui
+
+  isMoveTarget = case mTarget of
+    Just (LocationTarget lid) -> Just lid == aiMoveTarget sit
+    _ -> False
+
+  targetDistance = case mTarget of
+    Just (LocationTarget lid) -> fromIntegral (Map.findWithDefault 99 lid (aiLocationDistances sit))
+    _ -> 99
+
+  fightOdds = case kind of
+    FightChoice (Just eid) -> case Map.lookup eid (aiEnemies sit) of
+      Just info -> maybe 0 (\f -> fromMaybe 0 (passOdds (aiBagOutcomes sit) (seatSkillValue SkillCombat) f)) (eiFight info)
+      Nothing -> 0
+    _ -> 0
+
+  enemyRemainingHealth = case kind of
+    FightChoice (Just eid) -> maybe 0 (fromIntegral . fromMaybe 0 . eiRemainingHealth) (Map.lookup eid (aiEnemies sit))
+    _ -> 0
+
+  isFinisher = case kind of
+    FightChoice (Just eid) ->
+      indicator $
+        maybe
+          False
+          (maybe False (<= aiBestWeaponDamage sit) . eiRemainingHealth)
+          (Map.lookup eid (aiEnemies sit))
+    _ -> 0
+
+  evadeOdds = case kind of
+    EvadeChoice (Just eid) -> case Map.lookup eid (aiEnemies sit) of
+      Just info -> maybe 0 (\e -> fromMaybe 0 (passOdds (aiBagOutcomes sit) (seatSkillValue SkillAgility) e)) (eiEvade info)
+      Nothing -> 0
+    _ -> 0
+
+  investigateOdds = case kind of
+    InvestigateChoice ->
+      maybe 0 (\sh -> fromMaybe 0 (passOdds (aiBagOutcomes sit) (seatSkillValue SkillIntellect) sh)) (aiLocationShroud sit)
+    _ -> 0
+
+  playFocus = case kind of
+    PlayCardChoice mf -> mf
+    _ -> Nothing
+
+  choiceFeaturesBlock =
+    [ ("ch.kind." <> name, indicator (choiceKindName kind == name))
+    | name <- allChoiceKindNames
+    ]
+      <> [ ("ch.isPriorityTarget", indicator (maybe False (`elem` aiPrioritySet sit) mTarget))
+         , ("ch.isEconomy", indicator (isEconomyChoice ui))
+         , ("ch.isStop", indicator (uiIsStop ui))
+         , ("ch.isRedundantWeapon", indicator (maybe False (isRedundantWeapon sit) (playedCard ui)))
+         , ("ch.isMoveTarget", indicator isMoveTarget)
+         , ("ch.targetDistance", targetDistance)
+         , ("ch.fightOdds", fightOdds)
+         , ("ch.enemyRemainingHealth", enemyRemainingHealth)
+         , ("ch.isFinisher", isFinisher)
+         , ("ch.evadeOdds", evadeOdds)
+         , ("ch.investigateOdds", investigateOdds)
+         ]
+      <> [ ("ch.playFocus." <> focusFeatureName f, indicator (playFocus == Just f))
+         | f <- allFoci
+         ]
 
 data ChoiceKind
   = FightChoice (Maybe EnemyId)

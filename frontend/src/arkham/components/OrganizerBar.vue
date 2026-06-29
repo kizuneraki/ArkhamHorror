@@ -3,7 +3,10 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useEventStore } from '@/arkham/stores/event'
+import { useEpicHelpers } from '@/arkham/composables/useEpicHelpers'
 import { COUNTERMEASURES, counterValue, type GroupDigest } from '@/arkham/types/EpicEvent'
+import EventCountdown from '@/arkham/components/EventCountdown.vue'
+import SharedPools from '@/arkham/components/SharedPools.vue'
 
 // Organizer-only chrome shown at the top of a group's game view (below the app
 // nav, above the board). Reads everything from the event store, which Game.vue
@@ -12,11 +15,18 @@ import { COUNTERMEASURES, counterValue, type GroupDigest } from '@/arkham/types/
 // `spectate` is the CURRENT mode for this game view (true = organizer/spectate
 // route, false = playing a seat). The bar is always present for the organizer; it
 // uses the mode to decide what a tab/button does.
-const props = defineProps<{ eventId: string; currentGameId: string; spectate: boolean }>()
+const props = defineProps<{
+  eventId: string
+  currentGameId: string
+  spectate: boolean
+  // Stage (1/2/3) of the act in play for the VIEWED group, from Game.vue.
+  currentActStage: number | null
+}>()
 
 const router = useRouter()
 const store = useEventStore()
 const { event, sharedState, groupDigests } = storeToRefs(store)
+const { groupLabel } = useEpicHelpers()
 
 const countermeasures = computed(() => counterValue(sharedState.value, COUNTERMEASURES))
 const totalInvestigators = computed(() => sharedState.value.sharedTotalInvestigators)
@@ -50,7 +60,7 @@ function playSeat(group: GroupDigest) {
 
 <template>
   <div class="organizer-bar">
-    <RouterLink class="dashboard-link" :to="`/events/${eventId}`">
+    <RouterLink class="dashboard-link" :to="`/events/${eventId}`" @click="store.requestDashboardHub()">
       <span class="back-arrow" aria-hidden="true">‹</span>
       <span class="dashboard-name">{{ event?.name ?? $t('event.organizerDashboard') }}</span>
     </RouterLink>
@@ -64,7 +74,7 @@ function playSeat(group: GroupDigest) {
         :class="{ active: group.gameId === currentGameId, playing: group.gameId === currentGameId && !spectate }"
         @click="viewGroup(group)"
       >
-        <span class="tab-name">{{ group.name && group.name.trim() ? group.name : $t('event.group', { ordinal: group.ordinal + 1 }) }}</span>
+        <span class="tab-name">{{ groupLabel(group) }}</span>
         <span v-if="group.gameId === currentGameId && !spectate" class="tab-mode">{{ $t('event.playing') }}</span>
       </button>
     </nav>
@@ -78,12 +88,14 @@ function playSeat(group: GroupDigest) {
         @click="playSeat(group)"
       >
         {{ seatedGroups.length > 1
-          ? `${$t('event.playMySeat')} · ${group.name && group.name.trim() ? group.name : $t('event.group', { ordinal: group.ordinal + 1 })}`
+          ? `${$t('event.playMySeat')} · ${groupLabel(group)}`
           : $t('event.playMySeat') }}
       </button>
     </div>
 
     <div class="bar-metrics">
+      <SharedPools :current-act-stage="currentActStage" />
+      <EventCountdown />
       <div class="bar-metric">
         <span class="bar-label">{{ $t('event.countermeasures') }}</span>
         <span class="bar-value">{{ countermeasures }}</span>
@@ -98,6 +110,10 @@ function playSeat(group: GroupDigest) {
 
 <style scoped>
 .organizer-bar {
+  position: relative;
+  /* Sit above the start-barrier overlay (z-index 900) so the organizer can still
+     navigate between groups while a group waits at the barrier. */
+  z-index: 1000;
   flex: 0 0 auto;
   display: flex;
   align-items: stretch;
