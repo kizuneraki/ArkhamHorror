@@ -37,9 +37,9 @@ import Arkham.Capability
 import Arkham.Card
 import Arkham.Card.PlayerCard
 import Arkham.Card.Settings
+import Arkham.PlayerCard qualified as PlayerCard
 import Arkham.Classes.HasGame
 import Arkham.CommitRestriction
-import Arkham.Customization
 import Arkham.Deck qualified as Deck
 import Arkham.DefeatedBy
 import Arkham.Discover
@@ -64,6 +64,7 @@ import Arkham.Helpers.Card (
   getModifiedCardCost,
   passesLimits,
  )
+import Arkham.Helpers.Customization
 import Arkham.Helpers.Cost (getCanAffordCost)
 import Arkham.Helpers.Criteria (passesCriteria)
 import Arkham.Helpers.Discover
@@ -110,6 +111,7 @@ import Arkham.Location.Types (Field (..))
 import Arkham.Matcher (
   AssetMatcher (..),
   CardMatcher (..),
+  ExtendedCardMatcher (..),
   EnemyMatcher (..),
   EventMatcher (..),
   ForPlay (..),
@@ -119,12 +121,12 @@ import Arkham.Matcher (
   assetControlledBy,
   assetIs,
   at_,
+  basic,
   cardIs,
   coveredByAnyInPlayEnemy,
   locationWithInvestigator,
   oneOf,
   orConnected,
-  pattern AnyInPlayEnemy,
   pattern AssetWithAnyClues,
  )
 import Arkham.Message qualified as Msg
@@ -853,7 +855,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         _ -> original
       applyMatcherModifiers _ n = n
       canFightMatcher = case overrides of
-        [] -> if choose.overriden then AnyInPlayEnemy else CanFightEnemy source
+        [] -> if choose.overriden then AnyEnemy else CanFightEnemy source
         [o] -> CanFightEnemyWithOverride o
         _ -> error "multiple overrides found"
     smods <- filter (== IgnoreAloof) <$> getModifiers choose.skillTest
@@ -998,7 +1000,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         _ -> original
       applyMatcherModifiers _ n = n
       canEvadeMatcher = case overrides of
-        [] -> if choose.overriden then AnyInPlayEnemy else CanEvadeEnemy source
+        [] -> if choose.overriden then AnyEnemy else CanEvadeEnemy source
         [o] -> CanEvadeEnemyWithOverride o
         _ -> error "multiple overrides found"
     enemyIds <-
@@ -2170,8 +2172,72 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
   PutCardOnTopOfDeck _ _ card -> handlePutCardOnTopOfDeckV2 a card
   PutCardOnBottomOfDeck _ (Deck.InvestigatorDeck iid) card | iid == toId a -> handlePutCardOnBottomOfDeck a iid card
   PutCardOnBottomOfDeck _ _ card -> handlePutCardOnBottomOfDeckV2 a card
-  DebugAddToHand iid cardId | iid == investigatorId -> do
+  DebugCustomize iid cardId | iid == investigatorId -> do
     card <- getCard cardId
+    case card of
+      PlayerCard pc -> do
+        let customizations = cdCustomizations $ toCardDef card
+        let availableCustomizations = filter (not . hasCustomization_ customizations (pcCustomizations pc)) (keys customizations)
+        player <- getPlayer iid
+        unless (null availableCustomizations) do
+          push $ Msg.chooseOne player
+            [ Label ("$customizations." <> tshow customization) [DebugIncreaseCustomization iid card.cardCode customization []]
+            | customization <- availableCustomizations
+            ]
+      _ -> pure ()
+    pure a
+  DebugIncreaseCustomization iid cardCode customization choices | iid == investigatorId -> do
+    mcard <- selectOne $ OwnedBy (InvestigatorWithId iid) <> basic (CardWithCardCode cardCode)
+    for_ mcard \card -> do
+      let requiredChoices = choicesRequired customization
+      -- Debug: enable the customization entirely by filling every remaining check mark
+      let fillAll = pushAll $ replicate (fromMaybe 0 $ cardRemainingCheckMarks card customization) (IncreaseCustomization iid cardCode customization choices)
+      if length choices < length requiredChoices
+        then case drop (length choices) requiredChoices of
+          (CustomizationTraitChoice : _) -> do
+            player <- getPlayer iid
+            push $ Msg.chooseOneDropDown player
+              [ ( tshow trait
+                , DebugIncreaseCustomization iid cardCode customization (ChosenTrait trait : choices)
+                )
+              | trait <- [minBound ..]
+              ]
+          (CustomizationCardChoice matcher : _) -> do
+            player <- getPlayer iid
+            push $ Msg.chooseOneDropDown player
+              [ ( c
+                , DebugIncreaseCustomization iid cardCode customization (ChosenCard c : choices)
+                )
+              | c <- sort $ nub $ map toTitle $ filter ((`cardMatch` matcher) . (`lookupPlayerCard` nullCardId)) (toList PlayerCard.allPlayerCards)
+              ]
+          (CustomizationSkillChoice : _) -> do
+            player <- getPlayer iid
+            push $ Msg.chooseOneDropDown player
+              [ ( tshow skill
+                , DebugIncreaseCustomization iid cardCode customization (ChosenSkill skill : choices)
+                )
+              | skill <- [minBound ..]
+              ]
+          (CustomizationIndexChoice zs : _) -> do
+            player <- getPlayer iid
+            push $ Msg.chooseOneDropDown player
+              [ ( tshow z
+                , DebugIncreaseCustomization iid cardCode customization (ChosenIndex n : choices)
+                )
+              | (n, z) <- withIndex zs
+              ]
+          _ -> fillAll
+        else fillAll
+    pure a
+  DebugAddToHand iid cardId | iid == investigatorId -> do
+    card <- setOwner iid =<< getCard cardId
+    bondedCards <- concatForM (cdBondedWith $ toCardDef card) \(n, cCode) -> do
+      case lookupCardDef cCode of
+        Nothing -> error "missing bonded card"
+        Just def -> do
+          cs <- replicateM n (genCard def)
+          traverse (Arkham.Card.setTaboo a.taboo <=< setOwner iid) cs
+    pushAll $ map (PlaceInBonded iid) bondedCards
     liftRunMessage (AddToHand iid [card]) a
   DrawToHandFrom iid deck cards | iid == investigatorId -> handleDrawToHandFrom a iid deck cards
   DrawToHand iid cards | iid == investigatorId -> handleDrawToHand a iid cards
