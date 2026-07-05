@@ -242,7 +242,7 @@ runGameMessage msg g = case msg of
       setCardAttachments (cCode, attachments) =
         flip Map.alter cCode \case
           Nothing -> Just $ defaultPerCardSettings {cardAttachments = attachments}
-          Just current -> Just $ current {cardAttachments = attachments <> cardAttachments current}
+          Just current -> Just $ current {cardAttachments = attachments}
     let investigator =
           updateAttrs (lookupInvestigator iid' playerId) \ia ->
             ia
@@ -259,7 +259,7 @@ runGameMessage msg g = case msg of
     when (notNull sideDeck) $ push $ LoadSideDeck iid sideDeck
     push
       $ if iid /= oldIid
-        then InitDeck iid dl.url (Deck deck)
+        then InitDeck $ InitDeckAttrs iid dl.url (Just decklist) (Deck deck)
         else UpgradeDeck iid dl.url (Deck deck)
     let activeInvestigatorF =
           if gameActiveInvestigatorId g == oldIid then set activeInvestigatorIdL iid else id
@@ -304,7 +304,7 @@ runGameMessage msg g = case msg of
       setCardAttachments (cCode, attachments) =
         flip Map.alter cCode \case
           Nothing -> Just $ defaultPerCardSettings {cardAttachments = attachments}
-          Just current -> Just $ current {cardAttachments = attachments <> cardAttachments current}
+          Just current -> Just $ current {cardAttachments = attachments}
     let investigator =
           updateAttrs (lookupInvestigator iid' playerId) \ia ->
             ia
@@ -319,7 +319,7 @@ runGameMessage msg g = case msg of
               }
     let iid = toId investigator
     when (notNull sideDeck) $ push $ LoadSideDeck iid sideDeck
-    push $ InitDeck iid dl.url (Deck deck)
+    push $ InitDeck $ InitDeckAttrs iid dl.url (Just decklist) (Deck deck)
     let activeInvestigatorF =
           if gameActiveInvestigatorId g `elem` replaceIds then set activeInvestigatorIdL iid else id
         turnPlayerInvestigatorF =
@@ -346,7 +346,7 @@ runGameMessage msg g = case msg of
       setCardAttachments (cCode, attachments) =
         flip Map.alter cCode \case
           Nothing -> Just $ defaultPerCardSettings {cardAttachments = attachments}
-          Just current -> Just $ current {cardAttachments = attachments <> cardAttachments current}
+          Just current -> Just $ current {cardAttachments = attachments}
     let investigator' =
           overAttrs
             ( \ia ->
