@@ -169,7 +169,7 @@ instance RunMessage LocationAttrs where
           ( SkillTestOption
               { option =
                   Label
-                    (withI18n $ cardNameVar a $ ikey' "label.discoverClueAt")
+                    (withI18n $ cardNameVar a $ ikey' "discoverClueAt")
                     [ UpdateHistory iid (HistoryItem HistorySuccessfulInvestigations 1)
                     , Successful (Action.Investigate, toTarget a) iid source (toTarget a) n
                     ]
@@ -184,7 +184,7 @@ instance RunMessage LocationAttrs where
           ( SkillTestOption
               { option =
                   Label
-                    (withI18n $ cardNameVar a $ ikey' "label.discoverClueAt")
+                    (withI18n $ cardNameVar a $ ikey' "discoverClueAt")
                     [Successful (Action.Investigate, toTarget a) iid source actual n]
               , kind = OriginalOptionKind
               , criteria = Nothing
