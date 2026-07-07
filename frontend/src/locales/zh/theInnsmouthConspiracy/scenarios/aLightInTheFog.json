@@ -52,21 +52,21 @@
   },
   "pumpRoom": {
     "label": {
-      "decreaseFlood": "Choose location to decrease flood level",
-      "increaseFlood": "Choose location to increase flood level"
+      "decreaseFlood": "选择一个地点降低其淹没等级",
+      "increaseFlood": "选择一个地点提升其淹没等级"
     }
   },
   "tooltips": {
     "theMoonRoom": {
-      "resign": "You don one of the the empty diving suits and dive into the reflecting pool"
+      "resign": "你穿上一件闲置的潜水服，一头扎进了反射月光的池中。"
     },
     "falconPointGatehouse": {
-      "resign": "You head back into the woods, leaving the lighthouse and its mysteries behind."
+      "resign": "你退回树林，把灯塔和它的秘密都抛在身后。"
     }
   },
   "worshippersOfTheDeep": {
     "label": {
-      "moveBelow": "Move to the location directly below their location"
+      "moveBelow": "移动到其正下方的地点。"
     }
   }
 }
