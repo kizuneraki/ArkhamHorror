@@ -766,6 +766,7 @@ data Message
   | FindEncounterCard InvestigatorId Target [ScenarioZone] CardMatcher FindEncounterCardStrategy
   | FinishedWithMulligan InvestigatorId
   | FocusCards [Card]
+  | HighlightCards [Card]
   | FocusChaosTokens [ChaosToken]
   | Force Message
   | FoundAndDrewEncounterCard InvestigatorId EncounterCardSource EncounterCard
@@ -1131,6 +1132,7 @@ data Message
   | Simultaneously [Message]
   | -- Debug
     ClearQueue
+  | SetCardOwner CardId InvestigatorId
   | DebugAddToHand InvestigatorId CardId
   | DebugCustomize InvestigatorId CardId
   | DebugIncreaseCustomization InvestigatorId CardCode Customization [CustomizationChoice]

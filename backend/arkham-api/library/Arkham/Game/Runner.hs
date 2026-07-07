@@ -184,6 +184,30 @@ runGameMessage msg g = case msg of
   SetAiEnabled pid b -> pure $ overAiSeat pid (\s -> s {aiEnabled = b}) g
   SetAiResponseDelay pid n -> pure $ overAiSeat pid (\s -> s {aiResponseDelayMs = n}) g
   ResetLocationOffsets -> pure $ g & locationOffsetsL .~ mempty
+  SetCardOwner cardId iid -> do
+    -- Debug: force one card's owner to iid across every representation it lives in
+    -- (store, hand/deck/discard/underneath/bonded, and any in-play skill/asset entity).
+    -- Used to repair promo/alt-art games where deck-load stamped a normalized-away owner.
+    let reown pc = pc {pcOwner = Just iid}
+        fixPc pc = if toCardId pc == cardId then reown pc else pc
+        fixCard c = if toCardId c == cardId then overPlayerCard reown c else c
+        fixInv a =
+          a
+            { investigatorDeck = fmap fixPc (investigatorDeck a)
+            , investigatorDiscard = map fixPc (investigatorDiscard a)
+            , investigatorHand = map fixCard (investigatorHand a)
+            , investigatorCardsUnderneath = map fixCard (investigatorCardsUnderneath a)
+            , investigatorBondedCards = map fixCard (investigatorBondedCards a)
+            }
+        fixSkill a = if toCardId a == cardId then a {skillOwner = iid} else a
+        fixAsset a = if toCardId a == cardId then a {assetOwner = Just iid} else a
+    for_ (lookup cardId (g ^. cardsL)) \c -> replaceCard cardId (fixCard c)
+    pure
+      $ g
+      & cardsL %~ Map.adjust fixCard cardId
+      & entitiesL . investigatorsL %~ Map.map (overAttrs fixInv)
+      & entitiesL . skillsL %~ Map.map (overAttrs fixSkill)
+      & entitiesL . assetsL %~ Map.map (overAttrs fixAsset)
   SetGameRunWindows b -> pure $ g & runWindowsL .~ b
   SetGameState s -> pure $ g & gameStateL .~ s
   ChoosingDecks -> pure $ g & entitiesL . investigatorsL .~ mempty & gameStateL .~ IsChooseDecks (g ^. playersL)
@@ -452,6 +476,7 @@ runGameMessage msg g = case msg of
           & (entitiesL . assetsL %~ Map.filterWithKey (\k _ -> k `elem` persistedAssets))
           & (entitiesL . locationsL .~ mempty)
           & (entitiesL . enemiesL .~ mempty)
+          & (entitiesL . enemyLocationsL .~ mempty)
           & (entitiesL . actsL .~ mempty)
           & (entitiesL . agendasL .~ mempty)
           & (entitiesL . treacheriesL .~ mempty)
@@ -494,6 +519,7 @@ runGameMessage msg g = case msg of
       & (entitiesL . assetsL %~ Map.filterWithKey (\k _ -> k `elem` persistedAssets))
       & (entitiesL . locationsL .~ mempty)
       & (entitiesL . enemiesL .~ mempty)
+      & (entitiesL . enemyLocationsL .~ mempty)
       & (entitiesL . actsL .~ mempty)
       & (entitiesL . agendasL .~ mempty)
       & (entitiesL . treacheriesL .~ mempty)
@@ -516,6 +542,7 @@ runGameMessage msg g = case msg of
       & (actionRemovedEntitiesL .~ mempty)
       & (activeAbilitiesL .~ mempty)
       & (foundCardsL .~ mempty)
+      & (highlightedCardsL .~ mempty)
       & (cardUsesL .~ mempty)
       & (windowStackL .~ mempty)
       & (windowDepthL .~ 0)
@@ -796,7 +823,8 @@ runGameMessage msg g = case msg of
         )
         mEffect
   FocusCards cards -> pure $ g & focusedCardsL %~ (cards :)
-  UnfocusCards -> pure $ g & focusedCardsL %~ drop 1
+  HighlightCards cards -> pure $ g & highlightedCardsL .~ map toCardId cards
+  UnfocusCards -> pure $ g & focusedCardsL %~ drop 1 & highlightedCardsL .~ mempty
   FoundCards cards -> pure $ g & foundCardsL .~ cards
   ClearFound FromDeck -> do
     pure $ g & foundCardsL %~ Map.filterWithKey (\k _ -> not (zoneIsFromDeck k))
@@ -1462,7 +1490,7 @@ runGameMessage msg g = case msg of
       else pushAll [msg', FinishedSearch]
     pure g
   FinishedSearch -> do
-    pure $ g & foundCardsL .~ mempty
+    pure $ g & foundCardsL .~ mempty & highlightedCardsL .~ mempty
   DiscardedCard cardId -> do
     let
       handleCard card = case card of

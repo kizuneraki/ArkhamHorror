@@ -308,6 +308,7 @@ newGame scenarioOrCampaignId seed playerCount difficulty includeTarotReadings =
         , gameSkillTest = Nothing
         , gameGameState = state
         , gameFocusedCards = mempty
+        , gameHighlightedCards = mempty
         , gameFocusedTarotCards = mempty
         , gameFoundCards = mempty
         , gameFocusedChaosTokens = mempty
@@ -725,6 +726,7 @@ instance ToJSON gid => ToJSON (PublicGame gid) where
       <> ("skillTest" .= skillTest)
       <> ("skillTestChaosTokens" .= skillTestChaosTokens)
       <> ("focusedCards" .= fromMaybe [] (headMay gameFocusedCards))
+      <> ("highlightedCards" .= gameHighlightedCards)
       <> ("focusedTarotCards" .= gameFocusedTarotCards)
       <> ("foundCards" .= gameFoundCards)
       <> ("focusedChaosTokens" .= focusedChaosTokens)
@@ -861,6 +863,7 @@ instance ToJSON gid => ToJSON (PublicGame gid) where
         , "skillTest" .= toJSON skillTest
         , "skillTestChaosTokens" .= toJSON skillTestChaosTokens
         , "focusedCards" .= toJSON (fromMaybe [] $ headMay gameFocusedCards)
+        , "highlightedCards" .= toJSON gameHighlightedCards
         , "focusedTarotCards" .= toJSON gameFocusedTarotCards
         , "foundCards" .= toJSON gameFoundCards
         , "focusedChaosTokens" .= toJSON focusedChaosTokens
@@ -1246,7 +1249,7 @@ getInvestigatorsMatching MatcherFunc {..} matcher = do
           pure $ maybe False (`elem` locations) mlid
     InvestigatorWithId iid -> pure $ flip runMatches as $ (== iid) . toId
     InvestigatorIs cardCode -> pure $ flip runMatches as \a ->
-      toCardCode a == cardCode || case a.form of
+      cardCode `elem` (toCardDef (toAttrs a)).cardCodes || case a.form of
         TransfiguredForm c -> c == cardCode
         YithianForm -> coerce (toId a) == cardCode
         HomunculusForm -> coerce (toId a) == cardCode
@@ -4085,6 +4088,12 @@ enemyMatcherFilter es matcher' = do
             Nothing -> pure False
             Just v -> gameValueMatches v valueMatcher
       filterM (fieldMapM EnemyRemainingHealth hasRemainingHealth . toId) es
+    EnemyWithRemainingHealthLessThan calc -> do
+      n <- calculate calc
+      let hasRemainingHealth = \case
+            Nothing -> pure False
+            Just v -> gameValueMatches v (LessThan $ Static n)
+      filterM (fieldMapM EnemyRemainingHealth hasRemainingHealth . toId) es
     EnemyWithoutModifier modifier -> filterM (`withoutModifier` modifier) es
     EnemyWithModifier modifier -> do
       flip filterM es \enemy -> elem modifier <$> getModifiers (toTarget enemy)
@@ -6447,6 +6456,7 @@ runMessages gameId mLogger = do
             ClearUI -> runWithEnv (overGameM $ runMessage ClearUI) >> runMessages gameId mLogger
             Ask _ (ChooseOneAtATime []) -> runMessages gameId mLogger
             Ask _ (ChooseOneAtATimeWithAuto _ []) -> runMessages gameId mLogger
+            Ask _ (ChooseN _ []) -> runMessages gameId mLogger
             Ask pid q -> do
               -- if we are choosing decks, we do not want to clobber other ChooseDeck
               moreChooseDecks <-
