@@ -1,17 +1,17 @@
 {
-  "heading": "Scenario V",
+  "heading": "冒险 V",
   "specialRules": [
     {
-      "title": "Vehicles",
-      "body": "<p class='basic'>An asset with the vehicle keyword represents a vehicle that the investigators may enter or leave. An asset with this keyword is called a vehicle, and follows these rules:</p><ul><li>While an investigator’s mini-card is placed overlapping a vehicle, that investigator is in that vehicle. While an investigator’s mini-card is placed overlapping their location, that investigator is instead not in a vehicle (even if they are at the same location as a vehicle).<ul><li>As a {'{'}action{'}'} ability, an investigator may enter or leave a vehicle at their location. Move that investigator’s mini-card onto the vehicle or off of the vehicle and onto their location to indicate their new position. Each investigator may perform this ability only once each round.</li><li>An investigator who is in a vehicle is also at that vehicle’s location.</li><li>While an investigator is in a vehicle, that investigator cannot move independently of the vehicle.</li></ul></li><li>Vehicles generally have one or more abilities that allow them to move to a connecting location. As a vehicle moves from one location to another, all investigators in the vehicle also move with the vehicle.</li><li>Vehicles do not alter enemy movement or enemy engagement in any way unless otherwise noted.</li></ul>"
+      "title": "载具",
+      "body": "<p class='basic'>带有载具关键词的支援代表了调查员可以进入或离开的交通工具。带有此关键词的支援即称为载具，遵循以下规则：</p><ul><li>调查员的迷你卡放在载具上时，则该调查员在该载具上。调查员的迷你卡放在其地点上时，则该调查员不在载具上(即使同一地点有载具)。<ul><li>作为一个{'{'}action{'}'}能力，调查员可以进入或离开其地点的载具。将该调查员的迷你卡移动到载具上；或从载具上拿开，放到其地点上，以此表示其新的位置。每位调查员每轮只可以执行该能力一次。</li><li>在载具的调查员也视为在载具所在地点。</li><li>调查员在载具时，不能脱离载具独自移动。</li></ul></li><li>通常来说，载具有能力可以移动到连接地点。载具若在地点间移动，载具上的所有调查员也随著载具一同移动。</li><li>除非特别说明，否则载具不会以任何方式改变敌人移动或敌人交战。</li></ul>"
     },
     {
-      "title": "Running / Stopped",
-      "body": "<p class='basic'>Vehicles in this scenario can either be “running” or “stopped,” as indicated by their two sides. The differences between a running vehicle and a stopped vehicle is indicated by the game text on each side. A vehicle’s engine can be started or stopped using the ability on that vehicle, flipping it over to its other side.</p><ul><li>Generally speaking, investigators will only be able to make swift progress in a running vehicle. However, it may sometimes be a good idea to briefly stop your vehicle if you are approaching a dangerous location, such as a Cliffside Road or a Tight Turn. Be careful!</li></ul>"
+      "title": "运行/停止",
+      "body": "<p class='basic'>在本场冒险中，载具要么“运行”，要么“停止”，由载具不同的面表示。运行载具和停止载具的区别体现在其每一面的游戏文本上。载具上的能力可以启动或停止其引擎，从而将载具翻到另一面。</p><ul><li>总的来说，在运行载具上，调查员可以高速前进。不过，要是到了像悬崖边道路或急转弯这样的危险地域，那么暂时停下载具有时也是好主意。当心前路！</li></ul>"
     },
     {
-      "title": "Road X",
-      "body": "<p class='basic'>During this scenario, the investigators are traveling the Old Innsmouth Road from Innsmouth to Falcon Point. This road is generally a straight line from left to right, but occasionally contains branching paths.</p><p class='basic'>Each time a location with the Road X keyword is revealed, if there are no locations ahead of the just revealed location, put X new locations into play in a new column in front of it, Old Innsmouth Road side faceup. The first of these locations must be the top location of the Road deck. Each of the remaining locations to be put into play are taken from among the set-aside Long Way Around locations (if there are not enough Long Way Around locations, use as many as you can). Shuffle each of those locations so that the players do not know which is which.</p><p>*For example: Trish is the driver of Elina Harper’s Car, and has just moved that car forward to an unrevealed location. It is a Fork in the Road with the “Road 2” keyword. Since there are currently no locations in front of Fork in the Road, she must therefore place 2 Old Innsmouth Road locations in front of Fork in the Road. She takes the top card of the Road deck and one of the set-aside Long Way Around locations, puts both of them into play in a new column in front of Fork in the Road, and shuffles them so that the players do not know which is which.*</p><ul><li>Generally, it is wise to avoid taking a Long Way Around, since it will slow you down and reduce the amount of time you have to reach Falcon Point.</li><li>During this scenario, each location is connected to each location behind or ahead of it, but not to any other location on its column.</li></ul>"
+      "title": "道路 X",
+      "body": "<p class='basic'>本场冒险中，调查员要沿著印斯茅斯老路前往猎鹰岬。这条路总的来说是从左到右的一条直线，但有时也会有岔路。</p><p class='basic'>每当揭示了有道路X关键词的地点，如果刚刚揭示的地点前方没有地点，则将X个新地点放置入场，排成一列放在前面，以印斯茅斯老路面朝上。这些地点中的第一张必须从道路牌堆顶拿取。其余要放置入场的地点则从放在一边的蜿蜒长路中拿取(如果没有足够的蜿蜒长路地点，则尽可能拿取)。混洗这些地点，以使玩家无法分辨。</p><p>*示例：特里希是艾莲娜·哈珀的车的司机，刚刚将该车向前移动到一个未揭示地点。这个地点是歧路，带有“道路2”关键词。由于歧路前方现在已没有地点，所以她必须将2张印斯茅斯老路地点放在歧路前方。她拿取道路牌堆顶的卡牌，和一张放在一边的蜿蜒长路地点，将这两张卡牌放置入场，在歧路前方排成一列，并混洗以使玩家无法分辨。*</p><ul><li>总的来说，避免拿取蜿蜒长路才是明智之举，因为它会减缓你的速度，浪费你前往猎鹰岬的时间。</li><li>本场冒险期间，每个地点与其前、后的每个地点相互连接，但不与同一列的其他地点连接。</li></ul>"
     }
   ],
   "label": {
@@ -26,11 +26,11 @@
   "resolutions": {
     "noResolution": {
       "title": "未达成任何结局",
-      "body": "<p><b>如果你未达成任何结局（所有调查员都被击败）：</b> 你前往猎鹰岬的路上可不轻松。异教徒跟在后面紧追不舍，还有印斯茅斯村外树林里潜居的怪物，你的车子每个转弯都备受阻挠。它一路逃出，已是伤痕累累，你不得不丢下车子，在树林里用两条腿隐秘前行。等你能远远瞧见灯塔的时候，晨曦已将天空映得一片橙红。“终于到了。”哈珀特工呻吟道。但已没有时间可以浪费，你继续向猎鹰岬的灯塔跋涉。精疲力尽，破釜沉舟。</p>"
+      "body": "<p><b>如果你未达成任何结局（所有调查员都被击败）：</b>你前往猎鹰岬的路上可不轻松。异教徒跟在后面紧追不舍，还有印斯茅斯村外树林里潜居的怪物，你的车子每个转弯都备受阻挠。它一路逃出，已是伤痕累累，你不得不丢下车子，在树林里用两条腿隐秘前行。等你能远远瞧见灯塔的时候，晨曦已将天空映得一片橙红。“终于到了。”哈珀特工呻吟道。但已没有时间可以浪费，你继续向猎鹰岬的灯塔跋涉。精疲力尽，破釜沉舟。</p><ul><li>在冒险日志中，记录下调查员在日出后抵达了猎鹰岬。</li><li>每位调查员获得等同于胜利牌区中胜利点数总值的经验。</li></ul>"
     },
     "resolution1": {
       "title": "结局 1",
-      "body": "<p><b>结局 1:</b> 你穿越浓雾，终于瞧见了远远的灯塔，不禁松了口气。“咱们把车停在这儿，剩下的路用走的吧。”哈珀建议道，“要是还有人在灯塔里，最好不要让他听见我们来了。”她的建议十分稳妥。你可不敢确定在猎鹰岬会遇上什么，但所有的迹象都表明这里是密教的另一处据点。你再三确认自己未遭跟踪，然后把车停在路边。你从车箱里收齐自己的东西，开始往猎鹰岬的灯塔跋涉……</p>"
+      "body": "<p><b>结局 1:</b>你穿越浓雾，终于瞧见了远远的灯塔，不禁松了口气。“咱们把车停在这儿，剩下的路用走的吧。”哈珀建议道，“要是还有人在灯塔里，最好不要让他听见我们来了。”她的建议十分稳妥。你可不敢确定在猎鹰岬会遇上什么，但所有的迹象都表明这里是密教的另一处据点。你再三确认自己未遭跟踪，然后把车停在路边。你从车箱里收齐自己的东西，开始往猎鹰岬的灯塔跋涉……</p><ul><li>在冒险日志中，记录下调查员在日出前抵达了猎鹰岬。</li><li>每位调查员获得等同于胜利牌区中胜利点数总值的经验。</li></ul>"
     }
   },
   "tokens": {
@@ -49,16 +49,16 @@
   },
   "tooltips": {
     "elinaHarpersCarRunning": {
-      "drawAndMoveRoad": "If you are this vehicle's driver: Draw the top card of the encounter deck. Then, move this vehicle to a connecting _Road_ location. (Max once per round.)",
-      "stopCar": "If you are this vehicle's driver: You stop the car. Flip this vehicle over.",
-      "drive": "If you are this vehicle's driver: Draw the top card of the encounter deck. Then, move this vehicle to a connecting _Road_ location. (Max once per round.)",
-      "stop": "If you are this vehicle's driver: You stop the car. Flip this vehicle over."
+      "drawAndMoveRoad": "如果你是本载具的司机：抽取遭遇牌库顶的卡牌。然后，将本载具移动到一个连接的_道路_地点。(每轮最多一次。)",
+      "stopCar": "如果你是本载具的司机：你启动了车子。将本载具翻面。",
+      "drive": "如果你是本载具的司机：抽取遭遇牌库顶的卡牌。然后，将本载具移动到一个连接的_道路_地点。(每轮最多一次。)",
+      "stop": "如果你是本载具的司机：你启动了车子。将本载具翻面。"
     },
     "thomasDawsonsCarRunning": {
-      "drawAndMoveRoad": "If you are this vehicle's driver: Draw the top card of the encounter deck. Then, move this vehicle to a connecting _Road_ location. (Max once per round.)",
-      "stopCar": "If you are this vehicle's driver: You stop the car. Flip this vehicle over.",
-      "drive": "If you are this vehicle's driver: Draw the top card of the encounter deck. Then, move this vehicle to a connecting _Road_ location. (Max once per round.)",
-      "stop": "If you are this vehicle's driver: You stop the car. Flip this vehicle over."
+      "drawAndMoveRoad": "如果你是本载具的司机：抽取遭遇牌库顶的卡牌。然后，将本载具移动到一个连接的_道路_地点。(每轮最多一次。)",
+      "stopCar": "如果你是本载具的司机：你启动了车子。将本载具翻面。",
+      "drive": "如果你是本载具的司机：抽取遭遇牌库顶的卡牌。然后，将本载具移动到一个连接的_道路_地点。(每轮最多一次。)",
+      "stop": "如果你是本载具的司机：你启动了车子。将本载具翻面。"
     }
   }
 }
