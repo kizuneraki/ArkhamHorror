@@ -47,6 +47,7 @@
   "continue": "Continue",
   "continueHavingDiscarded": "Continue having discarded 1 card | Continue having discarded {count} cards",
   "damageEnemy": "Damage enemy",
+  "damageEnemyNamed": "Damage {name}",
   "dealDamage": "Deal {count} damage",
   "dealHorror": "Deal {count} horror",
   "dealAdditionalDamage": "Deal +{count} damage",

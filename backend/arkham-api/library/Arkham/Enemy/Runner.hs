@@ -1165,7 +1165,7 @@ instance RunMessage EnemyAttrs where
         $ SkillTestOption
           { option =
               Label
-                ("Damage " <> display (toName a))
+                (withI18n $ cardNameVar a $ ikey' "damageEnemyNamed")
                 [ UpdateHistory iid (HistoryItem HistorySuccessfulAttacks 1)
                 , Successful (Action.Fight, toProxyTarget target) iid source (toActionTarget target) n
                 ]
