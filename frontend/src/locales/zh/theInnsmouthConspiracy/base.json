@@ -116,36 +116,36 @@
     }
   },
   "memoriesRecovered": {
-    "aMeetingWithThomasDawson": "A Meeting with Thomas Dawson",
-    "aBattleWithAHorrifyingDevil": "A Battle with a Horrifying Devil",
-    "aDecisionToStickTogether": "A Decision to Stick Together",
-    "anEncounterWithASecretCult": "An Encounter with a Secret Cult",
-    "anIntervention": "An Intervention",
-    "aJailbreak": "A Jailbreak",
-    "aDealWithJoeSargent": "A Deal with Joe Sargent",
-    "aFollowedLead": "A Followed Lead",
-    "discoveryOfAStrangeIdol": "Discovery of a Strange Idol",
-    "discoveryOfAnUnholyMantle": "Discovery of an Unholy Mantle",
-    "discoveryOfAMysticalRelic": "Discovery of a Mystical Relic",
-    "aConversationWithMrMoore": "A Conversation with Mr. Moore",
-    "theLifecycleOfADeepOne": "The Lifecycle of a \"Deep One\"",
-    "aStingingBetrayal": "A Stinging Betrayal"
+    "aMeetingWithThomasDawson": "与托马斯·道森的一场会面",
+    "aBattleWithAHorrifyingDevil": "与骇人魔鬼的一战",
+    "aDecisionToStickTogether": "一起行动的决定",
+    "anEncounterWithASecretCult": "与神秘教派的一次相遇",
+    "anIntervention": "一次拦路警告",
+    "aJailbreak": "一次越狱",
+    "aDealWithJoeSargent": "与乔·萨金特的一场交易",
+    "aFollowedLead": "密切追踪的一条线索",
+    "discoveryOfAStrangeIdol": "发现了一尊奇怪的偶像",
+    "discoveryOfAnUnholyMantle": "发现了一件邪秽的斗篷",
+    "discoveryOfAMysticalRelic": "发现了一件神秘的遗物",
+    "aConversationWithMrMoore": "与摩尔船长的一次对话",
+    "theLifecycleOfADeepOne": "“深潜者”的生命周期",
+    "aStingingBetrayal": "一场刺痛的背叛"
   },
   "possibleHideouts": {
-    "innsmouthJail": "Innsmouth Jail",
-    "shorewardSlums": "Shoreward Slums",
-    "sawboneAlley": "Sawbone Alley",
-    "theHouseOnWaterStreet": "The House on Water Street",
-    "esotericOrderOfDagon": "Esoteric Order of Dagon",
-    "newChurchGreen": "New Church Green"
+    "innsmouthJail": "印斯茅斯监狱",
+    "shorewardSlums": "朝岸贫民窟",
+    "sawboneAlley": "锯骨巷",
+    "theHouseOnWaterStreet": "水街老屋",
+    "esotericOrderOfDagon": "达贡密教",
+    "newChurchGreen": "新格林教堂"
   },
   "possibleSuspects": {
-    "brianBurnham": "Brian Burnham",
-    "barnabasMarsh": "Barnabas Marsh",
-    "otheraGilman": "Othera Gilman",
-    "zadokAllen": "Zadok Allen",
-    "joyceLittle": "Joyce Little",
-    "robertFriendly": "Robert Friendly"
+    "brianBurnham": "布里安·伯纳姆",
+    "barnabasMarsh": "巴纳巴斯·马什",
+    "otheraGilman": "欧斯拉·吉尔曼",
+    "zadokAllen": "扎多克·艾伦",
+    "joyceLittle": "乔伊斯·小利透",
+    "robertFriendly": "罗伯特·弗兰得礼"
   },
   "label": {
     "addElinaHarper": "Add Elina Harper to your deck",
