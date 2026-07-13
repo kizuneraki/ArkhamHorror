@@ -10,7 +10,7 @@ import {
   onUnmounted,
   type VNodeRef,
 } from 'vue'
-import { imgsrc, isLocalized, toCamelCase } from '@/arkham/helpers'
+import { cardImg, imgsrc, isLocalized, toCamelCase } from '@/arkham/helpers'
 import { BugAntIcon } from '@heroicons/vue/20/solid'
 import { useDebug } from '@/arkham/debug'
 import { fetchPlayability, type PlayabilityResponse } from '@/arkham/api'
@@ -327,7 +327,7 @@ onUnmounted(() => {
 const getImage = (el: HTMLElement, depth = 0): string | null => {
   if (depth > 3) return null // avoid runaway recursion
 
-  if (el.dataset.imageId) return imgsrc(`cards/${el.dataset.imageId}.avif`)
+  if (el.dataset.imageId) return cardImg(el.dataset.imageId)
 
   if (el instanceof HTMLImageElement && el.classList.contains('card') && !el.closest('.revelation')) {
     return el.src || null
@@ -368,7 +368,7 @@ const sideways = computed<boolean>(() => {
   if (el.tagName.toLowerCase() === 'span') return false
 
   // fall back to natural aspect for dataset image
-  const url = el.dataset.image ?? (el.dataset.imageId ? imgsrc(`cards/${el.dataset.imageId}.avif`) : null)
+  const url = el.dataset.image ?? (el.dataset.imageId ? cardImg(el.dataset.imageId) : null)
   if (url) {
     const ar = imgARCache.get(url)
     if (ar != null) return ar > 1
@@ -553,7 +553,9 @@ const cardCode = computed<string | null>(() => {
   return m ? m[1] : null
 })
 
-const mutated = computed<string>(() => {
+const customizationVariant = computed<string>(() => {
+  const chained = hoveredElement.value?.dataset?.chained
+  if (chained) return `_${chained}`
   if (!card.value) return ''
   const m = card.value.match(/cards\/\d+(_Mutated\d+)\.avif$/)
   return m ? m[1] : ''
@@ -568,7 +570,10 @@ const additionalCard = computed<string | null>(() => {
 const customizationsCard = computed<string | null>(() => {
   if (!cardCode.value) return null
   if (!allCustomizations.has(cardCode.value)) return null
-  return imgsrc(`customizations/${cardCode.value}${mutated.value}.jpg`)
+  // Chained sheets (Runic Axe) ship as .avif; base and mutated sheets as .jpg.
+  const chained = hoveredElement.value?.dataset?.chained
+  if (chained) return imgsrc(`customizations/${cardCode.value}_${chained}.avif`)
+  return imgsrc(`customizations/${cardCode.value}${customizationVariant.value}.jpg`)
 })
 
 /* =============================================================================
@@ -722,7 +727,7 @@ const parsedTicks = computed<TickParsed[]>(() =>
 const tickPct = (tp: TickParsed): { top?: number; left?: number } => {
   const base = TICK_TABLE[tp.code]
   if (!base) return {}
-  const topMap = (tp.code === '09081' && mutated.value) ? TICK_TABLE_MUT_09081_TOP : base.top
+  const topMap = (tp.code === '09081' && customizationVariant.value) ? TICK_TABLE_MUT_09081_TOP : base.top
   return { top: topMap[tp.first], left: base.left[tp.idx] }
 }
 
@@ -901,6 +906,7 @@ const TOKEN_MAP: Record<string, string> = {
   '[bless]': '<span class="bless-icon"></span>',
   '[curse]': '<span class="curse-icon"></span>',
   '[frost]': '<span class="frost-icon"></span>',
+  '[moon]': '<span class="moon-icon"></span>',
   '[per_investigator]': '<span class="per-player"></span>',
   '[seal_a]': '<span class="seal-a-icon"></span>',
   '[seal_b]': '<span class="seal-b-icon"></span>',
