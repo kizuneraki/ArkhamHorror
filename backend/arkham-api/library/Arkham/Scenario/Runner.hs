@@ -82,6 +82,7 @@ import Arkham.Message.Lifted.Choose
 import Arkham.Name hiding (labeled)
 import Arkham.Phase
 import Arkham.Placement
+import Arkham.Homebrew.Tokens
 import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Resolution
@@ -214,12 +215,10 @@ runScenarioAttrs msg a@ScenarioAttrs {..} = runQueueT $ case msg of
     when standalone $ do
       players <- allPlayers
       lead <- getActivePlayer
+      batchId <- getId
       pushAll
         $ [Ask lead PickScenarioSettings | not scenarioIsSideStory]
-        <> [ chooseDecks players
-           , ResetInvestigators
-           , ResetGame
-           , StartScenario scenarioId Nothing
+        <> [ chooseDecks batchId players [ResetInvestigators, ResetGame, StartScenario scenarioId Nothing]
            ]
     pure a
   InitDeck
@@ -267,24 +266,23 @@ runScenarioAttrs msg a@ScenarioAttrs {..} = runQueueT $ case msg of
           purchaseTrauma <- initDeckTrauma deck' iid (toTarget a)
           initXp <- initDeckXp deck' iid (toTarget a)
           let deck'' = withDeck (<> weaknesses) deck'
+          pid <- getPlayer iid
 
+          -- Interactive setup is deferred past the deck barrier: a question parked
+          -- inside this seat's sub-flow would leave the rest of its setup in the
+          -- global queue for the next seat's answer to drain (#5173). Deferred work
+          -- resolves one seat at a time once every seat has chosen. LoadDeck stays
+          -- here (non-interactive) and still runs first, so the Morrígan swaps below
+          -- cannot be overwritten by it.
           pushAll
-            $ LoadDeck iid deck''
-            : purchaseTrauma
-              <> toList mEldritchBrand
-              <> [DoStep 1 msg]
-              <> initXp
-
-          -- Defer the Morrígan choice out of the ChooseDecks window. Every
-          -- InitDeck runs while decks are still being chosen; presenting an
-          -- interactive choice there folds it into the shared ChooseDeck
-          -- question and races the per-player investigator setup (a player could
-          -- be dropped from the game). Running it after DoneChoosingDecks lets
-          -- each choice resolve in the active game, one at a time. Queued after
-          -- the LoadDeck above so the added weakness isn't overwritten; falls
-          -- back to now when no ChooseDecks is pending (single-player / tests).
-          unless (null morriganMessages)
-            $ insertAfterMatchingOrNow morriganMessages (== DoneChoosingDecks)
+            [ LoadDeck iid deck''
+            , DeferPastSimultaneousAsk pid
+                $ morriganMessages
+                <> purchaseTrauma
+                <> toList mEldritchBrand
+                <> [DoStep 1 msg]
+                <> initXp
+            ]
           pure $ a & playerDecksL %~ insertMap iid deck''
         else pure a
   DoStep 1 (InitDeck InitDeckAttrs {initDeckInvestigator = iid, initDeckDeck = deck}) -> do
@@ -552,18 +550,20 @@ runScenarioAttrs msg a@ScenarioAttrs {..} = runQueueT $ case msg of
       if tokenModifier == AutoFailModifier
         then push FailSkillTest
         else do
+          let shouldRevealAnother = DoNotRevealAnotherChaosToken `notElem` mods
           when (token `elem` [#curse, #bless, #frost]) do
-            let shouldRevealAnother = DoNotRevealAnotherChaosToken `notElem` mods
             pushWhen shouldRevealAnother (DrawAnotherChaosToken iid)
-          -- Moon token (Circus Ex Mortis, guide p1): "0. Seal this token on
-          -- your investigator card and reveal another token." ResolveChaosToken
-          -- only fires for tokens revealed during a skill test, matching the
-          -- rule that a moon token revealed outside a skill test has no effect.
-          when (token == #moon) do
-            let shouldRevealAnother = DoNotRevealAnotherChaosToken `notElem` mods
-            pushAll
-              $ [SealChaosToken drawnToken, SealedChaosToken drawnToken (Just iid) (InvestigatorTarget iid)]
-              <> [DrawAnotherChaosToken iid | shouldRevealAnother]
+          -- Homebrew custom tokens: engine-level reveal behavior comes from the
+          -- token's registered 'CustomTokenReveal'. ResolveChaosToken only
+          -- fires for tokens revealed during a skill test, so custom tokens
+          -- revealed outside one never have an engine effect.
+          case customTokenRevealEffect token of
+            RevealNoEffect -> pure ()
+            RevealAnother -> pushWhen shouldRevealAnother (DrawAnotherChaosToken iid)
+            SealOnRevealerAndRevealAnother ->
+              pushAll
+                $ [SealChaosToken drawnToken, SealedChaosToken drawnToken (Just iid) (InvestigatorTarget iid)]
+                <> [DrawAnotherChaosToken iid | shouldRevealAnother]
     pure a
   EndOfScenario mNextCampaignStep -> do
     -- Do not update without updating Hemlock Preludes
