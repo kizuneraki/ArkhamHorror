@@ -7332,6 +7332,7 @@ test-suite spec
       Arkham.Investigator.Cards.TonyMorganSpec
       Arkham.Investigator.Cards.WendyAdamsSpec
       Arkham.Investigator.Cards.ZoeySamarasSpec
+      Arkham.Investigator.RunnerSpec
       Arkham.Location.Cards.DreamGatePointlessRealitySpec
       Arkham.Location.Cards.DreamGateWondrousJourneySpec
       Arkham.Location.Cards.EnchantedWoodsVillageOfZoogsSpec
@@ -7364,6 +7365,7 @@ test-suite spec
       Arkham.Treachery.Cards.AmnesiaSpec
       Arkham.Treachery.Cards.BetweenWorldsSpec
       Arkham.Treachery.Cards.BloodlustSpec
+      Arkham.Treachery.Cards.CaughtInTheCrossfireSpec
       Arkham.Treachery.Cards.ClawsOfSteamSpec
       Arkham.Treachery.Cards.CoverUpSpec
       Arkham.Treachery.Cards.DetachedFromRealitySpec
